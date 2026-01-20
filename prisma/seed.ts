@@ -9,7 +9,7 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   console.log('Start seeding ...')
 
-  const dummyImage = "https://cdn.pixabay.com/photo/2024/01/08/10/13/woman-8495134_1280.jpg"
+  const dummyImage = "https://res.cloudinary.com/dxfh5vzgh/image/upload/v1768908269/txly6eey6murxsomxbjz.jpg"
 
   const shopData = [
     { name: 'Kantin Bu Joko', description: 'Masakan rumahan yang lezat' },
