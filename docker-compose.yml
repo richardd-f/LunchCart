@@ -15,7 +15,7 @@ services:
     expose:
       - 3000
     env_file:
-      - .env.prod
+      - .env
     restart: always
     deploy:
       resources:
