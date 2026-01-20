@@ -23,6 +23,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Copy only what standalone needs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
@@ -32,8 +34,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 RUN apk add --no-cache openssl \
-    && npm install -g prisma@7.2.0 tsx \
-    && npm install @prisma/adapter-pg pg dotenv
+    && pnpm add -g prisma@7.2.0 tsx \
+    && pnpm add @prisma/adapter-pg pg dotenv
 
 EXPOSE 3000
 
