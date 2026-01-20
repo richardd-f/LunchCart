@@ -14,6 +14,8 @@ services:
     env_file:
       - .env
     command: prisma db seed
+    depends_on:
+      - migration
     networks:
       - npm_default
 
@@ -30,7 +32,7 @@ services:
         limits:
           cpus: '0.90'
     depends_on:
-      - migration
+      - seed
     networks:
       - npm_default
 
