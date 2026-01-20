@@ -32,7 +32,7 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 RUN apk add --no-cache openssl
-RUN npm install -g prisma@7.2.0 tsx
+RUN npm install -g prisma@7.2.0 tsx dotenv
 
 EXPOSE 3000
 
