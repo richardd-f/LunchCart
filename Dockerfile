@@ -23,6 +23,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Copy only what standalone needs
