@@ -1,0 +1,31 @@
+services:
+
+  migration:
+    image: ghcr.io/richardd-f/lunchcart:latest
+    container_name: lunchcart-migration
+    env_file:
+      - .env.prod
+    command: npm run prisma migrate deploy
+    networks:
+      - npm_default
+
+  web:
+    image: ghcr.io/richardd-f/lunchcart:latest
+    container_name: lunchcart
+    expose:
+      - 3000
+    env_file:
+      - .env.prod
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.90'
+    depends_on:
+      - migration
+    networks:
+      - npm_default
+
+networks:
+  npm_default:
+    external: true
