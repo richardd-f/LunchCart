@@ -135,7 +135,6 @@ model Meal {
   price       Decimal      @db.Decimal(10, 2)
   category    MealCategory
   isAvailable Boolean      @default(true) @map("isAvailable")
-  imageUrl    String       @default("") @map("image_url")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
 

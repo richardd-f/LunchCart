@@ -31,8 +31,10 @@ export default async function Home() {
              shopId={shop.id}
              shopName={shop.name}
              meals={shop.meals.map(m => ({
-               ...m,
-               price: Number(m.price) // Convert Decimal to Number/String for the component
+               id: m.id,
+               name: m.name,
+               price: Number(m.price),
+               images: m.images,
              }))}
            />
         ))}

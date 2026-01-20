@@ -31,8 +31,9 @@ COPY --from=builder /app/.next/static ./.next/static
 # Prisma (for migration and seeder from image)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
-RUN apk add --no-cache openssl
-RUN npm install -g prisma@7.2.0 tsx dotenv
+RUN apk add --no-cache openssl \
+    && npm install -g prisma@7.2.0 tsx \
+    && npm install @prisma/adapter-pg pg dotenv
 
 EXPOSE 3000
 

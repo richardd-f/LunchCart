@@ -8,8 +8,8 @@ interface ShopSectionProps {
   meals: Array<{
     id: number;
     name: string;
-    price: number | string; // Handle Decimal from Prisma
-    imageUrl?: string | null;
+    price: number | string;
+    images: Array<{ imagePath: string }>;
   }>;
 }
 
@@ -33,8 +33,8 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
           <Link key={meal.id} href={`/menu/${meal.id}`} className="block">
             <MenuCard 
               name={meal.name}
-              price={meal.price.toString()} // Ensure Decimal is converted to string for display props
-              imageUrl={meal.imageUrl}
+              price={meal.price.toString()}
+              imageUrl={meal.images[0]?.imagePath}
             />
           </Link>
         ))}

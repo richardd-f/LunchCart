@@ -36,7 +36,9 @@ async function main() {
               price: 15000,
               category: MealCategory.MEAL,
               isAvailable: true,
-              imageUrl: dummyImage,
+              images: {
+                create: [{ imagePath: dummyImage, isPrimary: true, order: 0 }]
+              }
             },
             {
               name: 'Mie Ayam Bakso',
@@ -44,7 +46,9 @@ async function main() {
               price: 12000,
               category: MealCategory.MEAL,
               isAvailable: true,
-              imageUrl: dummyImage,
+              images: {
+                create: [{ imagePath: dummyImage, isPrimary: true, order: 0 }]
+              }
             },
             {
               name: 'Es Teh Manis',
@@ -52,7 +56,9 @@ async function main() {
               price: 3000,
               category: MealCategory.DRINK,
               isAvailable: true,
-              imageUrl: dummyImage,
+              images: {
+                create: [{ imagePath: dummyImage, isPrimary: true, order: 0 }]
+              }
             },
             {
               name: 'Pisang Goreng Keju',
@@ -60,7 +66,9 @@ async function main() {
               price: 5000,
               category: MealCategory.SNACK,
               isAvailable: true,
-              imageUrl: dummyImage,
+              images: {
+                create: [{ imagePath: dummyImage, isPrimary: true, order: 0 }]
+              }
             },
             {
               name: 'Jus Jeruk',
@@ -68,7 +76,9 @@ async function main() {
               price: 8000,
               category: MealCategory.DRINK,
               isAvailable: true,
-              imageUrl: dummyImage,
+              images: {
+                create: [{ imagePath: dummyImage, isPrimary: true, order: 0 }]
+              }
             },
           ],
         },

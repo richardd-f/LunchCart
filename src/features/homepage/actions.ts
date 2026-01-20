@@ -25,8 +25,12 @@ export async function getHomepageData() {
           id: true,
           name: true,
           price: true,
-          imageUrl: true,
           description: true,
+          images: {
+            where: { isPrimary: true },
+            select: { imagePath: true },
+            take: 1,
+          },
         },
         take: 10, // Limit meals per shop for homepage performance
       },
