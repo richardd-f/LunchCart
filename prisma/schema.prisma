@@ -12,3 +12,310 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// --------------------------------------
+// Enums (Mapped from your migrations)
+// --------------------------------------
+
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum ShopStatus {
+  PENDING
+  REJECTED
+  CLOSED
+  OPEN
+  SUSPENDED
+}
+
+enum MealCategory {
+  MEAL
+  SNACK
+  DRINK
+  DESSERT
+}
+
+enum StaffRole {
+  OWNER
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  READY
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum TransactionType {
+  credit
+  debit
+}
+
+// --------------------------------------
+// Models
+// --------------------------------------
+
+model User {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  phone             String?   @unique
+  avatar            String?
+  googleId          String?   @unique @map("google_id")
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  password          String
+  role              UserRole  @default(USER)
+  staffNotification Boolean   @default(false) @map("staff_notification")
+  rememberToken     String?   @map("remember_token")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  cartItems CartItem[]
+  userRoles UserShopRole[]
+  orders    Order[]
+
+  @@map("users")
+}
+
+model Shop {
+  id           Int        @id @default(autoincrement())
+  name         String     @unique
+  address      String
+  phone        String
+  profileImage String?    @map("profileImage") // Kept as is from migration
+  description  String
+  status       ShopStatus @default(PENDING)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  meals     Meal[]
+  userRoles UserShopRole[]
+  wallet    ShopWallet?
+  orders    Order[]
+
+  @@map("shops")
+}
+
+model UserShopRole {
+  id              Int       @id @default(autoincrement())
+  shopId          Int       @map("shop_id")
+  userId          Int       @map("user_id")
+  role            StaffRole
+  getNotification Boolean   @default(true) @map("getNotification")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, userId])
+  @@map("user_roles")
+}
+
+model Meal {
+  id          Int          @id @default(autoincrement())
+  shopId      Int          @map("shop_id")
+  name        String
+  description String       @db.Text
+  price       Decimal      @db.Decimal(10, 2)
+  category    MealCategory
+  isAvailable Boolean      @default(true) @map("isAvailable")
+  imageUrl    String       @default("") @map("image_url")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  shop         Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  optionGroups MealOptionGroup[]
+  cartItems    CartItem[]
+  orderItems   OrderItem[]
+  images       MealImage[]
+
+  @@map("meals")
+}
+
+model MealImage {
+  id        Int      @id @default(autoincrement())
+  mealId    Int      @map("meal_id")
+  imagePath String   @map("image_path")
+  order     Int      @default(0)
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@map("meal_images")
+}
+
+model MealOptionGroup {
+  id         Int      @id @default(autoincrement())
+  mealId     Int      @map("meal_id")
+  name       String
+  isMultiple Boolean  @default(false) @map("is_multiple")
+  isRequired Boolean  @default(false) @map("is_required")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  meal   Meal              @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  values MealOptionValue[]
+
+  @@map("meal_option_groups")
+}
+
+model MealOptionValue {
+  id                Int      @id @default(autoincrement())
+  mealOptionGroupId Int      @map("meal_option_group_id")
+  name              String
+  price             Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  group           MealOptionGroup  @relation(fields: [mealOptionGroupId], references: [id], onDelete: Cascade)
+  cartItemOptions CartItemOption[]
+
+  @@map("meal_option_values")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  mealId    Int      @map("meal_id")
+  quantity  Int      @default(1)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  meal    Meal             @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  options CartItemOption[]
+
+  @@map("cart_items")
+}
+
+model CartItemOption {
+  id                Int      @id @default(autoincrement())
+  cartItemId        Int      @map("cart_item_id")
+  mealOptionValueId Int      @map("meal_option_value_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  cartItem        CartItem        @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  mealOptionValue MealOptionValue @relation(fields: [mealOptionValueId], references: [id], onDelete: Cascade)
+
+  @@unique([cartItemId, mealOptionValueId])
+  @@map("cart_item_options")
+}
+
+model ShopWallet {
+  id             Int      @id @default(autoincrement())
+  shopId         Int      @unique @map("shop_id")
+  balance        Decimal  @default(0) @db.Decimal(12, 2)
+  pendingBalance Decimal  @default(0) @map("pending_balance") @db.Decimal(12, 2)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("shop_wallets")
+}
+
+model Order {
+  id                    Int           @id @default(autoincrement())
+  userId                Int           @map("user_id")
+  shopId                Int           @map("shop_id")
+  orderStatus           OrderStatus   @default(PENDING) @map("order_status")
+  pickupDate            DateTime?     @map("pickup_date")
+  paymentStatus         PaymentStatus @default(PENDING) @map("payment_status")
+  midtransOrderId       String        @unique @map("midtrans_order_id") @db.VarChar(50)
+  midtransTransactionId String?       @map("midtrans_transaction_id") @db.VarChar(50)
+  paymentMethod         String?       @map("payment_method") @db.VarChar(30)
+  snapToken             String?       @map("snap_token") @db.VarChar(255)
+  totalAmount           Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paymentTime           DateTime?     @map("payment_time")
+  rawMidtransResponse   Json?         @map("raw_midtrans_response")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+  transactions Transaction[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @map("order_id")
+  mealId    Int?     @map("meal_id")
+  mealName  String   @map("meal_name") @db.VarChar(100)
+  quantity  Int
+  price     Decimal  @db.Decimal(10, 2)
+  notes     String?
+  rate      Int?
+  reviewMsg String?  @map("review_msg") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  order   Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  meal    Meal?             @relation(fields: [mealId], references: [id], onDelete: SetNull)
+  options OrderItemOption[]
+
+  @@map("order_items")
+}
+
+model OrderItemOption {
+  id          Int      @id @default(autoincrement())
+  orderItemId Int      @map("order_item_id")
+  optionName  String   @map("option_name") @db.VarChar(100)
+  price       Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@map("order_item_options")
+}
+
+model Transaction {
+  id          Int             @id @default(autoincrement())
+  walletId    Int             @map("wallet_id")
+  orderId     Int?            @map("order_id")
+  type        TransactionType
+  amount      Decimal         @db.Decimal(12, 2)
+  description String?         @db.Text
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  wallet ShopWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  order  Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@index([orderId])
+  @@map("transactions")
+}
