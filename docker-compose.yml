@@ -8,6 +8,15 @@ services:
     networks:
       - npm_default
 
+  seed:
+    image: ghcr.io/richardd-f/lunchcart:latest
+    container_name: lunchcart-seed
+    env_file:
+      - .env
+    command: prisma db seed
+    networks:
+      - npm_default
+
   web:
     image: ghcr.io/richardd-f/lunchcart:latest
     container_name: lunchcart

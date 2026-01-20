@@ -30,8 +30,9 @@ COPY --from=builder /app/.next/static ./.next/static
 
 # Prisma (for migration and seeder from image)
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 RUN apk add --no-cache openssl
-RUN npm install -g prisma@6
+RUN npm install -g prisma@7.2.0 tsx
 
 EXPOSE 3000
 
