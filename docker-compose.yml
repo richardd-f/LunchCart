@@ -4,7 +4,7 @@ services:
     image: ghcr.io/richardd-f/lunchcart:latest
     container_name: lunchcart-migration
     env_file:
-      - .env.prod
+      - .env
     command: prisma migrate deploy
     networks:
       - npm_default
