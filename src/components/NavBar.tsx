@@ -30,14 +30,6 @@ export function NavBar() {
               <Link href="/orders" className="hover:text-amber-100 transition-colors">
                 Orders
               </Link>
-              <NavDropdown 
-                label="Manage Shop" 
-                items={[
-                  { label: "Shop Information", href: "/shop/info" },
-                  { label: "Menu Management", href: "/shop/menu" },
-                  { label: "Staff Management", href: "/shop/staff" }
-                ]} 
-              />
               <Link href="/about" className="hover:text-amber-100 transition-colors">
                 About
               </Link>

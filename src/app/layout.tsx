@@ -89,6 +89,7 @@ export default function RootLayout({
     // 8. Changed lang to "id" because the content is Indonesian
     <html lang="id">
       <body
+        suppressHydrationWarning={true}
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <SessionProvider>

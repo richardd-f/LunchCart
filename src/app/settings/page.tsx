@@ -1,9 +1,5 @@
-import React from 'react'
+import { redirect } from 'next/navigation';
 
-function page() {
-  return (
-    <div>settings page</div>
-  )
+export default function SettingsPage() {
+  redirect('/settings/user');
 }
-
-export default page

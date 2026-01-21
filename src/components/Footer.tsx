@@ -19,7 +19,7 @@ export function Footer() {
         </a>
         
         <div className="mt-8 pt-6 border-t border-white/20 text-xs text-white/60">
-          &copy; {new Date().getFullYear()} Felitech. All rights reserved.
+          &copy; {new Date().getFullYear()} LunchCart. All rights reserved.
         </div>
       </div>
     </footer>
