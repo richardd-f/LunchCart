@@ -2,9 +2,13 @@
 
 import Link from 'next/link';
 import React, { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import { NavDropdown } from './NavDropdown';
+import Image from 'next/image';
 
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: session, status } = useSession();
 
   return (
     <nav className="bg-[#F97352] text-white shadow-md sticky top-0 z-50">
@@ -22,21 +26,71 @@ export function NavBar() {
           <div className="flex items-center gap-4 md:gap-6">
             
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+            <div className="hidden md:flex items-center gap-6 text-sm font-medium h-16">
               <Link href="/orders" className="hover:text-amber-100 transition-colors">
                 Orders
               </Link>
+              <NavDropdown 
+                label="Manage Shop" 
+                items={[
+                  { label: "Shop Information", href: "/shop/info" },
+                  { label: "Menu Management", href: "/shop/menu" },
+                  { label: "Staff Management", href: "/shop/staff" }
+                ]} 
+              />
               <Link href="/about" className="hover:text-amber-100 transition-colors">
                 About
               </Link>
             </div>
 
-            {/* Profile Picture Placeholder (Always Visible) */}
-             <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border border-white/30 cursor-pointer hover:bg-white/30 transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
-                  <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
-                </svg>
-            </div>
+            {/* Auth Section */}
+            {status === 'loading' ? (
+              <div className="h-8 w-8 rounded-full bg-white/20 animate-pulse" />
+            ) : session?.user ? (
+              <div className="relative group">
+                <button className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border border-white/30 cursor-pointer hover:bg-white/30 transition-colors">
+                  {session.user.image ? (
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || 'User'}
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-white">
+                      <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+                {/* Dropdown */}
+                <div className="absolute top-full right-0 mt-0 w-48 bg-white rounded-md shadow-lg py-1 text-gray-800 transition-all duration-200 ease-out origin-top-right transform opacity-0 scale-95 invisible group-hover:opacity-100 group-hover:scale-100 group-hover:visible">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <p className="text-sm font-medium text-gray-900 truncate">{session.user.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{session.user.email}</p>
+                  </div>
+                  <Link
+                    href="/settings"
+                    className="block px-4 py-2 text-sm hover:bg-orange-50 hover:text-[#F97352] transition-colors"
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-orange-50 hover:text-[#F97352] transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Link
+                href="/auth/signin"
+                className="px-4 py-2 bg-white text-[#F97352] rounded-md text-sm font-medium hover:bg-orange-50 transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
 
             {/* Mobile Menu Button */}
             <button
@@ -79,6 +133,25 @@ export function NavBar() {
           >
             About
           </Link>
+          {session?.user ? (
+            <button
+              onClick={() => {
+                signOut();
+                setIsMenuOpen(false);
+              }}
+              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <Link 
+              href="/auth/signin" 
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     </nav>
