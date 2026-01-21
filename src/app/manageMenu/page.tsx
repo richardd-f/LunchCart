@@ -1,6 +1,8 @@
 import { getMeals } from '@/features/manageMenu/action';
 import MenuDashboard from '@/features/manageMenu/components/MenuDashboard';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ManageMenuPage() {
   const { data: meals, error } = await getMeals();
 
