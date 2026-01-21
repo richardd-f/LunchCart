@@ -18,6 +18,7 @@ async function main() {
     { name: 'Bakso Pak Kumis', description: 'Bakso urat dan halus' },
   ]
 
+  // Seeder Shop and their menus
   for (const shopInfo of shopData) {
     const shop = await prisma.shop.upsert({
       where: { name: shopInfo.name },
@@ -85,6 +86,25 @@ async function main() {
       },
     })
     console.log(`Created shop with id: ${shop.id}`)
+  }
+
+  // Seeder User
+  const adminEmails = [
+    'ffelixrichardo@gmail.com',
+    'odipintar@gmail.com',
+  ]
+
+  for (const email of adminEmails) {
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { role: 'ADMIN' },
+      create: {
+        name: email.split('@')[0],
+        email,
+        role: 'ADMIN',
+      },
+    })
+    console.log(`Created/updated admin user: ${user.email} (id: ${user.id})`)
   }
 
   console.log('Seeding finished.')
