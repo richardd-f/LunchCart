@@ -69,7 +69,7 @@ export default function OptionManager({ groups, onChange }: OptionManagerProps) 
                                     type="text"
                                     value={group.name}
                                     onChange={(e) => updateGroup(gIndex, { name: e.target.value })}
-                                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm p-2 border bg-white"
+                                    className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none sm:text-sm p-2 border bg-white"
                                     placeholder="e.g. Size, Toppings"
                                 />
                             </div>
@@ -79,7 +79,7 @@ export default function OptionManager({ groups, onChange }: OptionManagerProps) 
                                         type="checkbox"
                                         checked={group.isMultiple}
                                         onChange={(e) => updateGroup(gIndex, { isMultiple: e.target.checked })}
-                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                        className="h-4 w-4 text-[#F97352] focus:ring-[#F97352] border-gray-300 rounded"
                                     />
                                     <span className="text-sm text-gray-700">Allow Multiple</span>
                                 </label>
@@ -88,7 +88,7 @@ export default function OptionManager({ groups, onChange }: OptionManagerProps) 
                                         type="checkbox"
                                         checked={group.isRequired}
                                         onChange={(e) => updateGroup(gIndex, { isRequired: e.target.checked })}
-                                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                                        className="h-4 w-4 text-[#F97352] focus:ring-[#F97352] border-gray-300 rounded"
                                     />
                                     <span className="text-sm text-gray-700">Required</span>
                                 </label>
@@ -115,7 +115,7 @@ export default function OptionManager({ groups, onChange }: OptionManagerProps) 
                                         type="text"
                                         value={option.name}
                                         onChange={(e) => updateOption(gIndex, oIndex, 'name', e.target.value)}
-                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm p-2 border bg-white"
+                                        className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none sm:text-sm p-2 border bg-white"
                                         placeholder="Option Name"
                                     />
                                     <div className="relative rounded-lg shadow-sm w-32">
@@ -126,7 +126,7 @@ export default function OptionManager({ groups, onChange }: OptionManagerProps) 
                                             type="number"
                                             value={option.price}
                                             onChange={(e) => updateOption(gIndex, oIndex, 'price', parseFloat(e.target.value))}
-                                            className="block w-full rounded-lg border-gray-300 pl-8 pr-3 focus:border-orange-500 focus:ring-orange-500 sm:text-sm p-2 border bg-white"
+                                            className="block w-full rounded-lg border-gray-300 pl-8 pr-3 focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none sm:text-sm p-2 border bg-white"
                                             placeholder="0.00"
                                         />
                                     </div>
@@ -158,7 +158,7 @@ export default function OptionManager({ groups, onChange }: OptionManagerProps) 
             <button
                 type="button"
                 onClick={handleAddGroup}
-                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50/30 transition-all font-medium text-sm flex items-center justify-center"
+                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-[#F97352] hover:text-[#F97352] hover:bg-[#F97352]/10 transition-all font-medium text-sm flex items-center justify-center"
             >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" /></svg>
                 Add Option Group

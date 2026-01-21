@@ -150,7 +150,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 border p-2 bg-gray-50/50"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none border p-2 bg-gray-50/50"
                   placeholder="e.g. Fried Rice"
                 />
               </div>
@@ -160,7 +160,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value as MealCategory)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 border p-2 bg-gray-50/50"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none border p-2 bg-gray-50/50"
                 >
                   {CATEGORIES.map(c => (
                     <option key={c} value={c}>{c}</option>
@@ -177,11 +177,11 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="500"
                     required
                     value={price}
                     onChange={(e) => setPrice(parseFloat(e.target.value))}
-                    className="block w-full rounded-md border-gray-300 pl-8 focus:border-orange-500 focus:ring-orange-500 p-2 border bg-gray-50/50"
+                    className="block w-full rounded-md border-gray-300 pl-8 focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none p-2 border bg-gray-50/50"
                   />
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring-orange-500 border p-2 bg-gray-50/50"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none border p-2 bg-gray-50/50"
                   placeholder="Delicious details..."
                 />
               </div>
@@ -203,7 +203,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                     id="isAvailable"
                     checked={isAvailable}
                     onChange={(e) => setIsAvailable(e.target.checked)}
-                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-[#F97352] focus:ring-[#F97352] border-gray-300 rounded"
                   />
                  <label htmlFor="isAvailable" className="text-sm font-medium text-gray-700">Available for Ordering</label>
               </div>
@@ -250,7 +250,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 transition-colors"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#F97352] hover:bg-[#e06241] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F97352] disabled:opacity-50 transition-colors"
             >
               {isLoading ? 'Saving...' : (initialData ? 'Update Menu' : 'Add Item')}
             </button>

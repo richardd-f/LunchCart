@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { addShopStaff, toggleStaffNotification, removeShopStaff } from '../action';
 import { UserShopRole, User } from '@/generated/prisma/client';
+import { showConfirmationToast } from '@/components/ConfirmationToast';
+import toast from 'react-hot-toast';
 
 type StaffWithUser = UserShopRole & {
   user: Pick<User, 'id' | 'name' | 'email' | 'phone' | 'image'>;
@@ -55,14 +57,18 @@ export default function ShopStaffPage({ initialStaff, currentUserId }: ShopStaff
   };
 
   const handleRemoveStaff = async (roleId: string) => {
-    if (!confirm('Are you sure you want to remove this staff member?')) return;
-
-    const result = await removeShopStaff(roleId);
-    if (result.success) {
-        setStaffList(prev => prev.filter(staff => staff.id !== roleId));
-    } else {
-        alert(result.error || 'Failed to remove staff');
-    }
+    showConfirmationToast(
+        'Are you sure you want to remove this staff member?',
+        async () => {
+            const result = await removeShopStaff(roleId);
+            if (result.success) {
+                setStaffList(prev => prev.filter(staff => staff.id !== roleId));
+                toast.success('Staff removed successfully');
+            } else {
+                toast.error(result.error || 'Failed to remove staff');
+            }
+        }
+    )
   };
 
   return (

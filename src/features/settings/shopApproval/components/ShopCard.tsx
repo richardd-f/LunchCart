@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { Shop, ShopStatus, User, UserShopRole } from '@/generated/prisma/client';
 import { updateShopStatus } from '../action';
+import toast from 'react-hot-toast';
+import { showConfirmationToast } from '@/components/ConfirmationToast';
 
 type ShopWithUser = Shop & {
   userRoles: (UserShopRole & { user: User })[];
@@ -17,23 +19,27 @@ export function ShopCard({ shop, onStatusChange }: ShopCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const owner = shop.userRoles[0]?.user;
 
-  const handleStatusUpdate = async (newStatus: ShopStatus) => {
-    if (confirm(`Are you sure you want to change status to ${newStatus}?`)) {
-      setIsLoading(true);
-      try {
-        const result = await updateShopStatus(shop.id, newStatus);
-        if (result.success) {
-          onStatusChange();
-        } else {
-          alert('Failed to update status');
+  const handleStatusUpdate = (newStatus: ShopStatus) => {
+    showConfirmationToast(
+        `Are you sure you want to change status to ${newStatus}?`,
+        async () => {
+            setIsLoading(true);
+            try {
+                const result = await updateShopStatus(shop.id, newStatus);
+                if (result.success) {
+                    onStatusChange();
+                    toast.success(`Shop status updated to ${newStatus}`);
+                } else {
+                    toast.error('Failed to update status');
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error('An error occurred');
+            } finally {
+                setIsLoading(false);
+            }
         }
-      } catch (err) {
-        console.error(err);
-        alert('An error occurred');
-      } finally {
-        setIsLoading(false);
-      }
-    }
+    )
   };
 
   const renderActions = () => {

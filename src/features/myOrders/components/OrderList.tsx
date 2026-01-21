@@ -6,6 +6,7 @@ import OrderFilter from './OrderFilter'
 import OrderCard from './OrderCard'
 import { getMyOrders, createPaymentToken } from '../action'
 import { Order, Shop, OrderItem, Meal, MealImage, Prisma } from '@/generated/prisma/client'
+import toast from 'react-hot-toast'
 
 // Reuse the type
 type OrderWithDetails = Prisma.OrderGetPayload<{
@@ -66,7 +67,7 @@ export default function OrderList() {
 
     const handlePay = async (orderId: string) => {
         if (!snapScriptLoaded) {
-            alert("Payment system is loading, please try again in a moment.")
+            toast.error("Payment system is loading, please try again in a moment.")
             return
         }
 
@@ -78,12 +79,15 @@ export default function OrderList() {
                     onSuccess: function(result: any) {
                         // Refresh orders to show updated status
                         fetchOrders()
+                        toast.success("Payment successful!")
                     },
                     onPending: function(result: any) {
                         fetchOrders()
+                        toast("Payment pending...")
                     },
                     onError: function(result: any) {
                         console.error("Payment error", result)
+                        toast.error("Payment failed")
                     },
                     onClose: function() {
                         // Maybe user closed without paying
@@ -92,7 +96,7 @@ export default function OrderList() {
             }
         } catch (error) {
             console.error("Failed to initiate payment", error)
-            alert("Failed to initiate payment. Please try again.")
+            toast.error("Failed to initiate payment. Please try again.")
         }
     }
 

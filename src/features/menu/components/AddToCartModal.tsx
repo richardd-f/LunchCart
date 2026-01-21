@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { AddToCartInput, MealWithDetails, addToCart } from '../action'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 interface AddToCartModalProps {
     meal: MealWithDetails
@@ -62,7 +63,7 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
         for (const group of meal.optionGroups) {
             if (group.isRequired) {
                 if (!selectedOptions[group.id] || selectedOptions[group.id].length === 0) {
-                    alert(`Please select an option for ${group.name}`)
+                    toast.error(`Please select an option for ${group.name}`)
                     return false
                 }
             }
@@ -87,11 +88,10 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                 await addToCart(payload)
                 onClose()
                 // router.refresh() // action already revalidates, but good to ensure
-                // Show toast success? simple alert for now
-                // alert("Added to cart!") 
+                toast.success("Added to cart!") 
             } catch (e) {
                 console.error(e)
-                alert("Failed to add to cart")
+                toast.error("Failed to add to cart")
             }
         })
     }

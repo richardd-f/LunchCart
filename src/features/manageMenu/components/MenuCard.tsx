@@ -1,6 +1,7 @@
 import { Meal, MealCategory, MealImage, MealOptionGroup, MealOptionValue } from '@/generated/prisma/client';
 import { deleteMeal, toggleMealAvailability, MealWithRelations } from '../action';
 import { useState } from 'react';
+import { showConfirmationToast } from '@/components/ConfirmationToast';
 
 interface MenuCardProps {
     meal: MealWithRelations;
@@ -14,12 +15,15 @@ export default function MenuCard({ meal, onEdit, onDelete, onToggle }: MenuCardP
     const [isToggling, setIsToggling] = useState(false);
 
     const handleDelete = async () => {
-        if (confirm('Are you sure you want to delete this menu item?')) {
-            setIsDeleting(true);
-            await deleteMeal(meal.id);
-            setIsDeleting(false);
-            if (onDelete) onDelete();
-        }
+        showConfirmationToast(
+            'Are you sure you want to delete this menu item?',
+            async () => {
+                setIsDeleting(true);
+                await deleteMeal(meal.id);
+                setIsDeleting(false);
+                if (onDelete) onDelete();
+            }
+        )
     };
 
     const handleToggle = async () => {
