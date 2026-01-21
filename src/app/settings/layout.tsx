@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import React from 'react';
 
 export default function SettingsLayout({
   children,
@@ -18,9 +19,21 @@ export default function SettingsLayout({
 
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'ADMIN';
+  
+  const [isOwner, setIsOwner] = React.useState(false);
+
+  React.useEffect(() => {
+    import('@/features/settings/shop/utils').then(({ getIsShopOwner }) => {
+        getIsShopOwner().then(setIsOwner);
+    });
+  }, [session?.user?.id]);
 
   if (isAdmin) {
     tabs.push({ name: 'Shop Approval', href: '/settings/shopApproval' });
+  }
+
+  if (isOwner) {
+    tabs.push({ name: 'Shop Staff', href: '/settings/shopStaff' });
   }
 
   return (

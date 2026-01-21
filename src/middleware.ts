@@ -25,6 +25,10 @@ export default auth((req) => {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/auth/signin", nextUrl));
     }
+    
+    if (nextUrl.pathname === "/settings") {
+      return NextResponse.redirect(new URL("/settings/user", nextUrl));
+    }
   }
 
   return NextResponse.next();

@@ -27,8 +27,11 @@ export function NavBar() {
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium h-16">
-              <Link href="/orders" className="hover:text-amber-100 transition-colors">
-                Orders
+              <Link href="/myOrders" className="hover:text-amber-100 transition-colors">
+                My Orders
+              </Link>
+              <Link href="/manageMenu" className="hover:text-amber-100 transition-colors">
+                Manage Menu
               </Link>
               <Link href="/about" className="hover:text-amber-100 transition-colors">
                 About
@@ -112,11 +115,18 @@ export function NavBar() {
       >
         <div className="border-t border-white/10 bg-[#F97352] px-2 pt-2 pb-3 space-y-1 sm:px-3">
           <Link 
-            href="/orders" 
+            href="/myOrders" 
             className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
             onClick={() => setIsMenuOpen(false)}
           >
-            Orders
+            My Orders
+          </Link>
+          <Link 
+            href="/manageMenu" 
+            className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Manage Menu
           </Link>
           <Link 
             href="/about" 

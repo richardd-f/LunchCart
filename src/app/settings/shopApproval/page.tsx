@@ -12,7 +12,7 @@ export default async function Page() {
   return (
     <div>
         <div className="mb-6">
-            <h2 className="text-lg font-medium text-gray-900">Shop Approval</h2>
+            <h2 className="text-lg font-bold text-gray-900">Shop Approval</h2>
             <p className="mt-1 text-sm text-gray-500">
                 Manage shop registrations and statuses.
             </p>

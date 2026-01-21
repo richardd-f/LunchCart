@@ -42,7 +42,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
   return (
     <form action={action} className="bg-white shadow sm:rounded-lg">
       <div className="px-4 py-5 sm:p-6">
-        <h3 className="text-lg font-medium leading-6 text-gray-900">
+        <h3 className="text-lg leading-6 text-gray-900 font-bold">
           Shop Profile
         </h3>
         <div className="mt-2 text-sm text-gray-500">
