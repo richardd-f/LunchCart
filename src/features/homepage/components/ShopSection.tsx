@@ -3,10 +3,10 @@ import React from 'react';
 import { MenuCard } from './MenuCard';
 
 interface ShopSectionProps {
-  shopId: number;
+  shopId: string;
   shopName: string;
   meals: Array<{
-    id: number;
+    id: string;
     name: string;
     price: number | string;
     images: Array<{ imagePath: string }>;

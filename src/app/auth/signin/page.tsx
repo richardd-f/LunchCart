@@ -1,27 +1,110 @@
 import { signIn } from "@/lib/auth";
 
-export default function SignInPage() {
+// Error messages mapping
+const errorMessages: Record<string, { title: string; description: string }> = {
+  OAuthAccountNotLinked: {
+    title: "Akun Sudah Terdaftar",
+    description:
+      "Email ini sudah terdaftar dengan metode login lain. Silakan gunakan metode login yang sama seperti sebelumnya.",
+  },
+  OAuthSignin: {
+    title: "Gagal Masuk",
+    description: "Terjadi kesalahan saat mencoba masuk dengan Google. Silakan coba lagi.",
+  },
+  OAuthCallback: {
+    title: "Kesalahan Callback",
+    description: "Terjadi kesalahan saat memproses login. Silakan coba lagi.",
+  },
+  OAuthCreateAccount: {
+    title: "Gagal Membuat Akun",
+    description: "Tidak dapat membuat akun. Silakan coba lagi atau hubungi administrator.",
+  },
+  EmailCreateAccount: {
+    title: "Gagal Membuat Akun",
+    description: "Tidak dapat membuat akun dengan email ini. Silakan coba lagi.",
+  },
+  Callback: {
+    title: "Kesalahan",
+    description: "Terjadi kesalahan saat memproses permintaan. Silakan coba lagi.",
+  },
+  AccessDenied: {
+    title: "Akses Ditolak",
+    description: "Anda tidak memiliki izin untuk mengakses aplikasi ini.",
+  },
+  Verification: {
+    title: "Verifikasi Gagal",
+    description: "Token verifikasi telah kedaluwarsa atau tidak valid.",
+  },
+  Default: {
+    title: "Terjadi Kesalahan",
+    description: "Terjadi kesalahan yang tidak diketahui. Silakan coba lagi.",
+  },
+};
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
+}) {
+  const { error, callbackUrl } = await searchParams;
+  const errorInfo = error
+    ? errorMessages[error] || errorMessages.Default
+    : null;
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-orange-50 to-white">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        {/* Error Alert */}
+        {errorInfo && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-fadeIn">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-6 h-6 text-red-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-800">
+                  {errorInfo.title}
+                </h3>
+                <p className="mt-1 text-sm text-red-600">
+                  {errorInfo.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
-            Selamat Datang
+            {error ? "Coba Lagi" : "Selamat Datang"}
           </h1>
           <p className="text-gray-500">
-            Masuk untuk melanjutkan ke Kantin Sanjose
+            {error
+              ? "Silakan coba masuk kembali"
+              : "Masuk untuk melanjutkan ke Kantin Sanjose"}
           </p>
         </div>
 
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/" });
+            await signIn("google", { redirectTo: callbackUrl || "/" });
           }}
         >
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:shadow-md transition-all duration-200"
+            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-700 font-medium hover:bg-gray-50 hover:shadow-md transition-all duration-200 cursor-pointer"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -48,6 +131,16 @@ export default function SignInPage() {
         <p className="text-center text-sm text-gray-400 mt-6">
           Dengan masuk, Anda menyetujui syarat dan ketentuan kami
         </p>
+
+        {/* Back to home link */}
+        <div className="mt-4 text-center">
+          <a
+            href="/"
+            className="text-sm text-[#F97352] hover:text-[#e86341] transition-colors duration-200"
+          >
+            ← Kembali ke Beranda
+          </a>
+        </div>
       </div>
     </div>
   );

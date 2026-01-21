@@ -1,42 +1,47 @@
 'use server';
 
 import { prisma } from "@/lib/prisma";
+import { ActionResult } from "@/types/ActionResult";
+import { ShopWithMeals } from "./type";
 
-export async function getHomepageData() {
-  const shops = await prisma.shop.findMany({
-    where: {
-      status: 'OPEN', // Assuming we only want open shops, or remove if not needed yet
-      meals: {
-        some: {
-          isAvailable: true,
+export async function getHomepageData(): Promise<ActionResult<ShopWithMeals[]>> {
+  try {
+    const shops = await prisma.shop.findMany({
+      where: {
+        status: 'OPEN',
+        meals: {
+          some: {
+            isAvailable: true,
+          }
         }
-      }
-    },
-    select: {
-      id: true,
-      name: true,
-      address: true,
-      profileImage: true,
-      meals: {
-        where: {
-          isAvailable: true,
-        },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          description: true,
-          images: {
-            where: { isPrimary: true },
-            select: { imagePath: true },
-            take: 1,
-          },
-        },
-        take: 10, // Limit meals per shop for homepage performance
       },
-    },
-    take: 20, // Limit total shops
-  });
+      include:{
+        meals:{
+          where:{
+            isAvailable: true,
+          },
+          include:{
+            images:{
+              where:{
+                isPrimary: true,
+              }
+            }
+          },
+          take: 10,
+        }
+      },
+      take: 20,
+    });
 
-  return shops;
+    return {
+      success: true,
+      data: shops,
+    };
+  } catch (error) {
+    console.error('Error fetching homepage data:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch homepage data',
+    };
+  }
 }

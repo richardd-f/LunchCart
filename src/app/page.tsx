@@ -6,7 +6,23 @@ import React from 'react';
 export const dynamic = 'force-dynamic'; // Ensure we get fresh data since it might change often
 
 export default async function Home() {
-  const shops = await getHomepageData();
+  const result = await getHomepageData();
+
+  // Handle error state
+  if (!result.success) {
+    return (
+      <main className="min-h-screen bg-white pb-10">
+        <div className="max-w-4xl mx-auto text-center py-20 px-4">
+          <p className="text-red-500 font-medium">Terjadi kesalahan</p>
+          <p className="text-gray-500 text-sm mt-2">
+            {typeof result.error === 'string' ? result.error : 'Gagal memuat data'}
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  const shops = result.data ?? [];
 
   return (
     <main className="min-h-screen bg-white pb-10">
