@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import Image from 'next/image';
 import { getUserNavInfo, UserNavInfo } from '@/features/nav/action';
+import { NavDropdown } from './NavDropdown';
 
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,16 +42,17 @@ export function NavBar() {
                   My Orders
                 </Link>
               )}
+
+
               {navInfo.hasShopRole && (
-                <Link href="/shopOrders" className="hover:text-amber-100 transition-colors">
-                  Shop Orders
-                </Link>
+                <NavDropdown label={'Shop'} items={[
+                    {label: "Shop Orders",href: '/shopOrders'},
+                    {label: "Manage Menu",href: '/manageMenu'},
+                    {label: "Shop Wallet",href: '/shopWallet'},
+                  ]}
+                />
               )}
-              {navInfo.hasShopRole && (
-                <Link href="/manageMenu" className="hover:text-amber-100 transition-colors">
-                  Manage Menu
-                </Link>
-              )}
+              
               <Link href="/about" className="hover:text-amber-100 transition-colors">
                 About
               </Link>
@@ -149,24 +151,17 @@ export function NavBar() {
               My Orders
             </Link>
           )}
+
+
           {navInfo.hasShopRole && (
-            <Link 
-              href="/shopOrders" 
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Shop Orders
-            </Link>
+            <NavDropdown label={'Shop'} items={[
+                {label: "Shop Orders",href: '/shopOrders'},
+                {label: "Manage Menu",href: '/manageMenu'},
+                {label: "Shop Wallet",href: '/shopWallet'},
+              ]}
+            />
           )}
-          {navInfo.hasShopRole && (
-            <Link 
-              href="/manageMenu" 
-              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Manage Menu
-            </Link>
-          )}
+
           <Link 
             href="/about" 
             className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
