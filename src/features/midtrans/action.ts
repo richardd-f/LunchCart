@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { PaymentStatus, OrderStatus } from "@prisma/client"
+import { sendWhatsApp } from "@/lib/gowa"
 
 export async function updatePaymentStatus(
     midtransOrderId: string,
@@ -12,9 +13,14 @@ export async function updatePaymentStatus(
 ) {
     console.log(`Updating payment status for Order ID: ${midtransOrderId}, Status: ${transactionStatus}`)
 
-    // 1. Find the order
+    // 1. Find the order with related data for notification
     const order = await prisma.order.findUnique({
         where: { midtransOrderId: midtransOrderId },
+        include: {
+            user: { select: { name: true } },
+            shop: { select: { id: true, name: true } },
+            orderItems: { select: { mealName: true, quantity: true } },
+        },
     })
 
     if (!order) {
@@ -70,9 +76,70 @@ export async function updatePaymentStatus(
             data: dataToUpdate,
         })
         console.log(`Order ${order.id} updated to ${newPaymentStatus}`)
+
+        // Send WhatsApp notification to shop staff when payment is PAID
+        if (newPaymentStatus === PaymentStatus.PAID) {
+            try {
+                const shopStaff = await prisma.userShopRole.findMany({
+                    where: {
+                        shopId: order.shopId,
+                        getNotification: true,
+                    },
+                    include: {
+                        user: {
+                            select: { phone: true, name: true },
+                        },
+                    },
+                })
+
+                // Build order items summary
+                const itemsSummary = order.orderItems
+                    .map(item => `• ${item.quantity}x ${item.mealName}`)
+                    .join('\n')
+
+                const formattedTotal = new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    maximumFractionDigits: 0,
+                }).format(Number(order.totalAmount))
+
+                const formattedPickup = order.pickupDate 
+                    ? new Date(order.pickupDate).toLocaleString('id-ID', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                    })
+                    : 'Tidak ditentukan'
+
+                const message = `🛒 *Pesanan Baru - SUDAH DIBAYAR!*
+
+👤 Pemesan: ${order.user?.name || 'Customer'}
+📅 Ambil: ${formattedPickup}
+
+📋 *Pesanan:*
+${itemsSummary}
+
+💰 *Total: ${formattedTotal}*
+
+✅ Pembayaran sudah dikonfirmasi. Segera proses pesanan!`
+
+                // Send to all staff with notification enabled (fire and forget)
+                for (const staff of shopStaff) {
+                    if (staff.user.phone) {
+                        sendWhatsApp(staff.user.phone, message).catch((err) => {
+                            console.error('Failed to send payment notification to staff:', err)
+                        })
+                    }
+                }
+            } catch (notifError) {
+                // Log but don't fail the update if notification fails
+                console.error('Failed to send payment notification:', notifError)
+            }
+        }
+
         return { success: true, order: updatedOrder }
     } catch (error) {
         console.error("Error updating order payment status:", error)
         return { success: false, error: "Failed to update order" }
     }
 }
+

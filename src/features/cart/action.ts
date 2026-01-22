@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { sendWhatsApp } from '@/lib/gowa';
 
 // Type definitions for Cart items with relations
 export type CartItemWithDetails = {
@@ -249,6 +250,61 @@ export async function createOrder(
             where: { id: order.id },
             data: { snapToken: snapToken },
         });
+
+        // Send WhatsApp notification to shop owners/staff with getNotification enabled
+        try {
+            const shopStaff = await prisma.userShopRole.findMany({
+                where: {
+                    shopId: shopId,
+                    getNotification: true,
+                },
+                include: {
+                    user: {
+                        select: { phone: true, name: true },
+                    },
+                },
+            });
+
+            // Build order items summary
+            const itemsSummary = orderItemsData
+                .map(item => `• ${item.quantity}x ${item.mealName}`)
+                .join('\n');
+
+            const formattedTotal = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0,
+            }).format(calculatedTotal);
+
+            const formattedPickup = pickupDateTime.toLocaleString('id-ID', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+            });
+
+            const message = `🛒 *Pesanan Baru!*
+
+👤 Pemesan: ${session.user.name || 'Customer'}
+📅 Ambil: ${formattedPickup}
+
+📋 *Pesanan:*
+${itemsSummary}
+
+💰 *Total: ${formattedTotal}*
+
+Segera konfirmasi pesanan di aplikasi.`;
+
+            // Send to all staff with notification enabled (fire and forget)
+            // for (const staff of shopStaff) {
+            //     if (staff.user.phone) {
+            //         sendWhatsApp(staff.user.phone, message).catch((err) => {
+            //             console.error('Failed to send order notification to staff:', err);
+            //         });
+            //     }
+            // }
+        } catch (notifError) {
+            // Log but don't fail the order if notification fails
+            console.error('Failed to send order notification:', notifError);
+        }
 
         return { token: snapToken, redirectUrl };
 
