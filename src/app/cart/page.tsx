@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import { getCartItems, createOrder, CartItemWithDetails } from '@/features/cart/action';
+import { getCartItems, createOrder, updateCartItemQuantity, CartItemWithDetails } from '@/features/cart/action';
 import { toast } from 'react-hot-toast';
 
 // Define Snap type globally
@@ -59,6 +59,47 @@ export default function CartPage() {
   const handleShopSelect = (shopId: string) => {
     setSelectedShopId(shopId);
     setPickupTime(''); // Reset time when changing shop
+  };
+
+  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    // Optimistic update
+    const updatedItems = cartItems.map(item => 
+        item.id === itemId ? { ...item, quantity: newQuantity } : item
+    );
+    setCartItems(updatedItems);
+    
+    // Update grouped items as well
+    const grouped: Record<string, CartItemWithDetails[]> = {};
+    updatedItems.forEach((item) => {
+        const shopId = item.meal.shopId;
+        if (!grouped[shopId]) {
+        grouped[shopId] = [];
+        }
+        grouped[shopId].push(item);
+    });
+    setGroupedItems(grouped);
+
+    try {
+        await updateCartItemQuantity(itemId, newQuantity);
+        // creating a real sync if needed or just trust optimistic
+    } catch (error) {
+        toast.error('Failed to update quantity');
+        // Revert on error would be ideal but for simplicity just fetch again
+        const items = await getCartItems();
+        setCartItems(items);
+        // ... reconstruct groups ...
+             const groupedRevert: Record<string, CartItemWithDetails[]> = {};
+            items.forEach((item) => {
+            const shopId = item.meal.shopId;
+            if (!groupedRevert[shopId]) {
+                groupedRevert[shopId] = [];
+            }
+            groupedRevert[shopId].push(item);
+            });
+            setGroupedItems(groupedRevert);
+    }
   };
 
   const calculateTotal = (shopId: string) => {
@@ -227,26 +268,54 @@ export default function CartPage() {
                             <div className="flex flex-1 flex-col">
                                 <div>
                                     <div className="flex justify-between text-base font-medium text-gray-900">
-                                        <h3>{item.meal.name}</h3>
-                                        <p className="ml-4">
-                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(Number(item.meal.price))}
+                                        <h3 className="font-bold">{item.meal.name}</h3>
+                                        <p className="ml-4 text-sm font-normal text-gray-400">
+                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.price))}
                                         </p>
                                     </div>
                                     {item.options.length > 0 && (
-                                        <div className="mt-1 text-sm text-gray-500">
-                                            {item.options.map((opt, idx) => (
-                                                <span key={opt.mealOptionValue.id}>
-                                                    {opt.mealOptionValue.name} (+{Number(opt.mealOptionValue.price)}){idx < item.options.length - 1 ? ', ' : ''}
-                                                </span>
+                                        <ul className="mt-1 text-sm text-gray-500 list-disc list-inside">
+                                            {item.options.map((opt) => (
+                                                <li key={opt.mealOptionValue.id} className="flex justify-between w-full">
+                                                    <span>{opt.mealOptionValue.name}</span>
+                                                    <span className="text-gray-400">
+                                                        {Number(opt.mealOptionValue.price) > 0 
+                                                            ? `+${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(opt.mealOptionValue.price))}`
+                                                            : '-'
+                                                        }
+                                                    </span>
+                                                </li>
                                             ))}
-                                        </div>
+                                        </ul>
                                     )}
                                     {item.notes && (
                                          <p className="mt-1 text-sm text-gray-500 italic">"{item.notes}"</p>
                                     )}
                                 </div>
-                                <div className="flex flex-1 items-end justify-between text-sm">
-                                    <p className="text-gray-500">Qty {item.quantity}</p>
+                                <div className="flex flex-1 items-end justify-between text-sm mt-4">
+                                    <div className="flex items-center border border-gray-300 rounded-md">
+                                        <button 
+                                            onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                            className="px-3 py-1 hover:bg-gray-100 text-gray-600 disabled:opacity-50"
+                                            disabled={item.quantity <= 1}
+                                        >
+                                            -
+                                        </button>
+                                        <span className="px-3 py-1 border-x border-gray-300 min-w-[2.5rem] text-center font-medium">
+                                            {item.quantity}
+                                        </span>
+                                        <button 
+                                            onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                            className="px-3 py-1 hover:bg-gray-100 text-gray-600"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                    <p className="font-bold text-gray-900 text-lg">
+                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
+                                            (Number(item.meal.price) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
+                                        )}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -297,7 +366,7 @@ export default function CartPage() {
                                 Total
                              </div>
                              <div className="text-xl font-bold text-[#F97352]">
-                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(shopTotal)}
+                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(shopTotal)}
                              </div>
                         </div>
 

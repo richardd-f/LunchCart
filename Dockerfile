@@ -27,6 +27,8 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy only what standalone needs
 COPY --from=builder /app/public ./public
@@ -36,13 +38,8 @@ COPY --from=builder /app/.next/static ./.next/static
 # Prisma (for migration and seeder from image)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
-# Copy the generated Prisma client from node_modules
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client ./node_modules/@prisma/client
-RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && pnpm add -g prisma@7.2.0 tsx \
-    && pnpm add @prisma/adapter-pg pg dotenv
+
+RUN pnpm add -g prisma@7.2.0 tsx dotenv
 
 EXPOSE 3000
 

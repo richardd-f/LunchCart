@@ -247,3 +247,39 @@ export async function createOrder(
         return { error: e.message || 'Failed to create order' };
     }
 }
+
+export async function updateCartItemQuantity(cartItemId: string, quantity: number) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+    }
+
+    if (quantity < 1) {
+         // Optionally delete, but for now just don't allow < 1 or handle delete in a separate action if needed. 
+         // Assuming UI prevents < 1, but safety check:
+         // If logic requires deletion on 0, w can add it. 
+         // For now, let's enforce min 1.
+         return; 
+    }
+
+    // Verify ownership
+    const cartItem = await prisma.cartItem.findUnique({
+        where: { id: cartItemId },
+    });
+
+    if (!cartItem || cartItem.userId !== session.user.id) {
+        throw new Error('Cart item not found or unauthorized');
+    }
+
+    await prisma.cartItem.update({
+        where: { id: cartItemId },
+        data: { quantity },
+    });
+    
+    // Revalidation is handled by the page calling this, or we can revalidate path. 
+    // Since page uses local state initially initialized by server action, 
+    // we might want to return the new list or let the client update optimistically/fetch again.
+    // The current page fetches on mount. 
+    // Ideally we return the updated list to keep it simple for the client to update state.
+    return getCartItems();
+}
