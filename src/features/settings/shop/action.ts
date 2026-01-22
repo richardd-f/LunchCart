@@ -27,6 +27,8 @@ export async function getShopProfile() {
       profileImage: true,
       description: true,
       status: true,
+      fixedTimePickup: true,
+      pickupTimes: true,
     },
   });
 
@@ -52,9 +54,15 @@ export async function createShop(
   const phone = formData.get('phone') as string;
   const description = formData.get('description') as string;
   const profileImage = formData.get('profileImage') as string;
+  const fixedTimePickup = formData.get('fixedTimePickup') === 'true';
+  const pickupTimes = formData.getAll('pickupTimes') as string[];
 
   if (!name || !address || !phone) {
     return { error: 'Please fill in all required fields (Name, Address, Phone)' };
+  }
+
+  if (fixedTimePickup && pickupTimes.length === 0) {
+     return { error: 'Please provide at least one pickup time for Fixed Time mode.' };
   }
 
   try {
@@ -68,8 +76,18 @@ export async function createShop(
           description: description || '',
           profileImage: profileImage || null,
           status: 'PENDING',
+          fixedTimePickup,
         },
       });
+
+      if (fixedTimePickup && pickupTimes.length > 0) {
+          await tx.pickupTime.createMany({
+              data: pickupTimes.map(time => ({
+                  shopId: shop.id,
+                  time,
+              }))
+          })
+      }
 
       await tx.userShopRole.create({
         data: {
@@ -104,8 +122,15 @@ export async function updateShopProfile(
   const description = formData.get('description') as string;
   const profileImage = formData.get('profileImage') as string;
 
+  const fixedTimePickup = formData.get('fixedTimePickup') === 'true';
+  const pickupTimes = formData.getAll('pickupTimes') as string[];
+
   if (!shopId) {
     return { error: 'Shop ID is missing' };
+  }
+
+  if (fixedTimePickup && pickupTimes.length === 0) {
+     return { error: 'Please provide at least one pickup time for Fixed Time mode.' };
   }
 
   // Verify ownership
@@ -123,15 +148,32 @@ export async function updateShopProfile(
   }
 
   try {
-    await prisma.shop.update({
-      where: { id: shopId },
-      data: {
-        name,
-        address,
-        phone,
-        description,
-        profileImage: profileImage || null,
-      },
+    await prisma.$transaction(async (tx) => {
+        await tx.shop.update({
+            where: { id: shopId },
+            data: {
+                name,
+                address,
+                phone,
+                description,
+                profileImage: profileImage || null,
+                fixedTimePickup,
+            },
+        });
+
+        // Update pickup times: delete existing and create new ones
+        await tx.pickupTime.deleteMany({
+            where: { shopId: shopId },
+        });
+
+        if (fixedTimePickup && pickupTimes.length > 0) {
+            await tx.pickupTime.createMany({
+                data: pickupTimes.map(time => ({
+                    shopId: shopId,
+                    time,
+                }))
+            });
+        }
     });
 
     revalidatePath('/settings/shop');

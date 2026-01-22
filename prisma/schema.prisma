@@ -132,23 +132,37 @@ model VerificationToken {
 }
 
 model Shop {
-  id           String     @id @default(cuid())
-  name         String     @unique
-  address      String
-  phone        String
-  profileImage String?    @map("profileImage")
-  description  String
-  status       ShopStatus @default(PENDING)
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  id              String     @id @default(cuid())
+  name            String     @unique
+  address         String
+  phone           String
+  profileImage    String?    @map("profileImage")
+  description     String
+  status          ShopStatus @default(PENDING)
+  fixedTimePickup Boolean    @default(false) @map("fixed_time_pickup")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  meals     Meal[]
-  userRoles UserShopRole[]
-  wallet    ShopWallet?
-  orders    Order[]
+  meals       Meal[]
+  userRoles   UserShopRole[]
+  wallet      ShopWallet?
+  orders      Order[]
+  pickupTimes PickupTime[]
 
   @@map("shops")
+}
+
+model PickupTime {
+  id        String   @id @default(cuid())
+  shopId    String   @map("shop_id")
+  time      String   @db.VarChar(5) // Format HH:MM
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@map("pickup_times")
 }
 
 model UserShopRole {
