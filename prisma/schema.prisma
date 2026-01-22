@@ -30,6 +30,7 @@ enum MealCategory {
   SNACK
   DRINK
   DESSERT
+  TOOL
 }
 
 enum StaffRole {
