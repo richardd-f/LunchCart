@@ -42,12 +42,22 @@ export async function updatePaymentStatus(
         newPaymentStatus = PaymentStatus.PENDING
     }
 
-    // 3. Update Order Status logic (Auto-confirm if paid?)
+    const terminalStatuses: PaymentStatus[] = [PaymentStatus.PAID, PaymentStatus.CANCELLED, PaymentStatus.EXPIRED, PaymentStatus.FAILED]
+    
+    if (terminalStatuses.includes(order.paymentStatus) && newPaymentStatus === PaymentStatus.PENDING) {
+        console.log(`Ignoring status downgrade: ${order.paymentStatus} -> ${newPaymentStatus} (out-of-order notification)`)
+        return { success: true, message: "Status not updated (already terminal)" }
+    }
 
+    if (order.paymentStatus === newPaymentStatus) {
+        console.log(`Status unchanged: ${newPaymentStatus}`)
+        return { success: true, message: "Status unchanged" }
+    }
+    
     const dataToUpdate: any = {
         paymentStatus: newPaymentStatus,
         midtransTransactionId: transactionId,
-        rawMidtransResponse: rawResponse ? JSON.parse(JSON.stringify(rawResponse)) : undefined, // Ensure serializable json
+        rawMidtransResponse: rawResponse ? JSON.parse(JSON.stringify(rawResponse)) : undefined,
     }
 
     if (newPaymentStatus === PaymentStatus.PAID) {
