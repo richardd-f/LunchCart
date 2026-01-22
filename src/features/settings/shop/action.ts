@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { sendWhatsApp } from '@/lib/gowa';
 
 export async function getShopProfile() {
   const session = await auth();
@@ -98,6 +99,37 @@ export async function createShop(
       });
     });
 
+    // Send WhatsApp notification to all admins
+    try {
+      const admins = await prisma.user.findMany({
+        where: { role: 'ADMIN', phone: { not: null } },
+        select: { phone: true },
+      });
+
+      const ownerName = session.user.name || 'Unknown';
+      const message = `🆕 *Permintaan Toko Baru*
+
+📋 *Detail Toko:*
+👤 Pemilik: ${ownerName}
+🏪 Nama Toko: ${name}
+📞 Telepon: ${phone}
+📍 Alamat: ${address}
+
+Silakan review di panel admin.`;
+
+      // Send to all admins (fire and forget - don't block on failure)
+      for (const admin of admins) {
+        if (admin.phone) {
+          sendWhatsApp(admin.phone, message).catch((err) => {
+            console.error('Failed to send WhatsApp to admin:', err);
+          });
+        }
+      }
+    } catch (notifError) {
+      // Log but don't fail the request if notification fails
+      console.error('Failed to send admin notification:', notifError);
+    }
+
     revalidatePath('/settings/shop');
     return { message: 'Shop request submitted successfully' };
   } catch (error) {
@@ -105,6 +137,7 @@ export async function createShop(
     return { error: 'Failed to create shop. Name might already be taken.' };
   }
 }
+
 
 export async function updateShopProfile(
   prevState: ShopProfileState,

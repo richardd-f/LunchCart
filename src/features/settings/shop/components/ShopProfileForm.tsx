@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { updateShopProfile } from '../action';
-import UploadButton from '@/components/UploadButton'; // Assuming we can use this
+import UploadButton from '@/components/UploadButton';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 interface ShopProfileFormProps {
   initialData: {
@@ -23,8 +24,17 @@ interface ShopProfileFormProps {
 
 export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
   const [state, action, isPending] = useActionState(updateShopProfile, {});
-  // Local state for image preview since it's interactive
   const [imageUrl, setImageUrl] = useState<string | null>(initialData?.profileImage || null);
+
+  // Show toast notifications when state changes
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    }
+    if (state.message) {
+      toast.success(state.message);
+    }
+  }, [state]);
 
   if (!initialData) {
     return (
@@ -77,17 +87,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
           <p>Update your shop's public information.</p>
         </div>
 
-        {state.error && (
-          <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-            {state.error}
-          </div>
-        )}
-        
-        {state.message && (
-          <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md">
-            {state.message}
-          </div>
-        )}
+
 
         {/* Hidden Input for Shop ID and Image URL */}
         <input type="hidden" name="shopId" value={initialData.id} />

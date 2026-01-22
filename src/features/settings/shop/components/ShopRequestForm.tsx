@@ -1,13 +1,24 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { createShop } from '../action';
 import UploadButton from '@/components/UploadButton';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 export default function ShopRequestForm() {
   const [state, action, isPending] = useActionState(createShop, {});
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  // Show toast notifications when state changes
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    }
+    if (state.message) {
+      toast.success(state.message);
+    }
+  }, [state]);
 
   const handleImageUpload = (results: any[]) => {
     if (results && results.length > 0 && results[0].secure_url) {
@@ -44,17 +55,7 @@ export default function ShopRequestForm() {
           <p>Fill in the details below to request to open a new shop.</p>
         </div>
 
-        {state.error && (
-          <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-            {state.error}
-          </div>
-        )}
-        
-        {state.message && (
-          <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md">
-            {state.message}
-          </div>
-        )}
+
 
         <input type="hidden" name="profileImage" value={imageUrl || ''} />
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { updateUserProfile } from '../action';
+import toast from 'react-hot-toast';
 
 interface UserProfileFormProps {
   initialData: {
@@ -13,6 +14,16 @@ interface UserProfileFormProps {
 
 export default function UserProfileForm({ initialData }: UserProfileFormProps) {
   const [state, action, isPending] = useActionState(updateUserProfile, {});
+
+  // Show toast notifications when state changes
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error);
+    }
+    if (state.message) {
+      toast.success(state.message);
+    }
+  }, [state]);
 
   if (!initialData) {
     return <div>Failed to load profile data.</div>;
@@ -27,18 +38,6 @@ export default function UserProfileForm({ initialData }: UserProfileFormProps) {
         <div className="mt-2 text-sm text-gray-500">
           <p>Update your personal information.</p>
         </div>
-
-        {state.error && (
-          <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-            {state.error}
-          </div>
-        )}
-        
-        {state.message && (
-          <div className="mt-4 p-4 bg-green-50 text-green-700 rounded-md">
-            {state.message}
-          </div>
-        )}
 
         <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-4">
@@ -90,10 +89,14 @@ export default function UserProfileForm({ initialData }: UserProfileFormProps) {
                 type="tel"
                 name="phone"
                 id="phone"
+                placeholder="628123456789"
                 defaultValue={initialData.phone || ''}
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
               />
             </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Format: Country code + number (e.g., 628123456789)
+            </p>
           </div>
         </div>
       </div>
