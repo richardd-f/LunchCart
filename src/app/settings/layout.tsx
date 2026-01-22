@@ -45,8 +45,8 @@ export default function SettingsLayout({
         </p>
       </div>
 
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+      <div className="border-b border-gray-200 overflow-x-auto overflow-y-hidden scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <nav className="flex space-x-8 min-w-max" aria-label="Tabs">
           {tabs.map((tab) => {
             const isActive = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
             return (
@@ -54,7 +54,7 @@ export default function SettingsLayout({
                 key={tab.name}
                 href={tab.href}
                 className={`
-                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors flex-shrink-0
                   ${
                     isActive
                       ? 'border-[#F97352] text-[#F97352]'
