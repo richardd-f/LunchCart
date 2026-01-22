@@ -148,11 +148,20 @@ export async function createOrder(
 
     // Calculate total purely on server side to prevent tampering
     let calculatedTotal = 0;
-    const orderItemsData = [];
+    const orderItemsData: {
+        mealId: string;
+        mealName: string;
+        quantity: number;
+        price: any;
+        notes: string | null;
+        options: {
+            create: { optionName: string; price: any }[];
+        };
+    }[] = [];
 
     for (const item of cartItems) {
         let itemTotal = Number(item.meal.price);
-        const itemOptions = [];
+        const itemOptions: { optionName: string; price: any }[] = [];
 
         for (const opt of item.options) {
             itemTotal += Number(opt.mealOptionValue.price);
