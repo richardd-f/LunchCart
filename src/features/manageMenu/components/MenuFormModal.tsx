@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CreateMealInput, MealImageInput, OptionGroupInput, createMeal, updateMeal, ActionResult, MealWithRelations, SerializableMeal } from '../action';
-import { Meal, MealCategory, MealOptionGroup, MealOptionValue, MealImage } from '@prisma/client';
+import { MealCategory } from '@prisma/client';
 import UploadButton from '@/components/UploadButton';
 import OptionManager from './OptionManager';
 
@@ -25,6 +25,9 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Drag and drop state
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
@@ -41,7 +44,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
             order: img.order
         })));
 
-        // Map optionGroups (price is already number)
+        // Map optionGroups
         setOptionGroups(initialData.optionGroups.map(group => ({
             id: group.id,
             name: group.name,
@@ -50,11 +53,11 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
             values: group.values.map(val => ({
                 id: val.id,
                 name: val.name,
-                price: val.price
+                price: Number(val.price)
             }))
         })));
       } else {
-        // Reset for create mode
+        // Reset for create mode - ensure everything is cleared
         setName('');
         setDescription('');
         setPrice(0);
@@ -74,13 +77,20 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
     setIsLoading(true);
     setError(null);
 
+    // Ensure strict order and isPrimary logic before submission
+    const processedImages = images.map((img, idx) => ({
+        ...img,
+        order: idx,
+        isPrimary: idx === 0
+    }));
+
     const payload: CreateMealInput = {
       name,
       description,
       price,
       category,
       isAvailable,
-      images,
+      images: processedImages,
       optionGroups,
     };
 
@@ -103,18 +113,68 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
   };
 
   const handleImageUpload = (results: any[]) => {
-    const newImages = results.map((info, idx) => ({
-      imagePath: info.secure_url,
-      isPrimary: images.length === 0 && idx === 0, // First uploaded image is primary if detailed logic omitted
-      order: images.length + idx,
-    }));
-    setImages([...images, ...newImages]);
+    // Use functional update to avoid stale closure issue
+    setImages(prevImages => {
+      const startIdx = prevImages.length;
+      const newImages = results.map((info, idx) => ({
+        imagePath: info.secure_url,
+        isPrimary: startIdx === 0 && idx === 0,
+        order: startIdx + idx,
+      }));
+      
+      // Combine and re-normalize order
+      const combinedImages = [...prevImages, ...newImages].map((img, idx) => ({
+          ...img,
+          order: idx,
+          isPrimary: idx === 0
+      }));
+      
+      return combinedImages;
+    });
   };
 
   const removeImage = (index: number) => {
     const newImages = [...images];
     newImages.splice(index, 1);
-    setImages(newImages);
+    // Re-calculate order and primary
+    const reorderedImages = newImages.map((img, idx) => ({
+        ...img,
+        order: idx,
+        isPrimary: idx === 0
+    }));
+    setImages(reorderedImages);
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    // Transparent drag image or default
+    // e.dataTransfer.setDragImage(e.currentTarget as Element, 0, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); // Necessary to allow dropping
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) return;
+
+    const newImages = [...images];
+    const [draggedItem] = newImages.splice(draggedIndex, 1);
+    newImages.splice(dropIndex, 0, draggedItem);
+
+    // Re-assign order and isPrimary
+    const updatedImages = newImages.map((img, idx) => ({
+      ...img,
+      order: idx,
+      isPrimary: idx === 0
+    }));
+
+    setImages(updatedImages);
+    setDraggedIndex(null);
   };
 
   return (
@@ -212,21 +272,36 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
             {/* Right Column: Images & Options */}
             <div className="space-y-6">
                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">Images (Drag to reorder)</label>
+                   <p className="text-xs text-gray-500 mb-2">First image will be the primary/cover image.</p>
+                   
                    <div className="grid grid-cols-3 gap-2 mb-2">
                       {images.map((img, idx) => (
-                        <div key={idx} className="relative aspect-square group">
-                          <img src={img.imagePath} alt={`Upload ${idx}`} className="w-full h-full object-cover rounded-lg border bg-gray-50" />
+                        <div 
+                            key={idx} // Using index because we don't have IDs for new images yet
+                            className={`relative aspect-square group cursor-move ${draggedIndex === idx ? 'opacity-50' : 'opacity-100'} transition-opacity`}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, idx)}
+                            onDragOver={(e) => handleDragOver(e, idx)}
+                            onDrop={(e) => handleDrop(e, idx)}
+                        >
+                          <img 
+                            src={img.imagePath} 
+                            alt={`Upload ${idx}`} 
+                            className="w-full h-full object-cover rounded-lg border bg-gray-50 select-none" 
+                          />
                           <button
                             type="button"
                             onClick={() => removeImage(idx)}
-                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors"
+                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors z-10"
                           >
                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
                              </svg>
                           </button>
-                          {img.isPrimary && <span className="absolute bottom-1 left-1 bg-orange-500/90 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">Main</span>}
+                          {/* Visual Indicator for Primary (First Item) */}
+                          {idx === 0 && <span className="absolute bottom-1 left-1 bg-orange-500/90 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">Main</span>}
+                          <div className="absolute inset-0 border-2 border-transparent hover:border-orange-300 rounded-lg pointer-events-none transition-colors" />
                         </div>
                       ))}
                    </div>
