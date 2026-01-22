@@ -356,6 +356,7 @@ model Transaction {
   orderId     String?         @map("order_id")
   type        TransactionType
   amount      Decimal         @db.Decimal(12, 2)
+  proofImage  String?         @map("proof_image")
   description String?         @db.Text
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")

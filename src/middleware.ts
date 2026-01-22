@@ -9,8 +9,8 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const userRole = req.auth?.user?.role;
 
-  // Protect /admin routes - ADMIN only
-  if (nextUrl.pathname.startsWith("/admin")) {
+  // Protect /admin, /withdraw, and /manageAdmin routes - ADMIN only
+  if (nextUrl.pathname.startsWith("/admin") ) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/auth/signin", nextUrl));
     }
@@ -56,6 +56,6 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/settings/:path*", "/myOrders/:path*", "/cart/:path*", "/manageMenu/:path*"],
+  matcher: ["/admin/:path*", "/withdraw/:path*", "/manageAdmin/:path*", "/settings/:path*", "/myOrders/:path*", "/cart/:path*", "/manageMenu/:path*"],
 };
 
