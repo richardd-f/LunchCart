@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback, useTransition } from 'react'
 import Script from 'next/script'
 import OrderFilter from './OrderFilter'
 import OrderCard from './OrderCard'
-import { getMyOrders, createPaymentToken } from '../action'
+import { getMyOrders, createPaymentToken, cancelOrder } from '../action'
 
 import toast from 'react-hot-toast'
 
@@ -79,6 +79,20 @@ export default function OrderList() {
         }
     }
 
+    const handleCancel = async (orderId: string) => {
+        if (!confirm("Are you sure you want to cancel this order?")) {
+            return
+        }
+
+        try {
+            await cancelOrder(orderId)
+            toast.success("Order cancelled successfully")
+            fetchOrders()
+        } catch (error: any) {
+            toast.error(error.message || "Failed to cancel order")
+        }
+    }
+
     return (
         <div className="space-y-6">
             <Script 
@@ -101,7 +115,8 @@ export default function OrderList() {
                         <OrderCard 
                             key={order.id} 
                             order={order} 
-                            onPay={handlePay} 
+                            onPay={handlePay}
+                            onCancel={handleCancel}
                         />
                     ))}
                 </div>

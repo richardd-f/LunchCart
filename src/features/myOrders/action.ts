@@ -150,3 +150,46 @@ export async function createPaymentToken(orderId: string) {
         throw new Error("Failed to create payment token")
     }
 }
+
+/**
+ * Cancel an order (only allowed if order is PENDING and not yet PAID)
+ */
+export async function cancelOrder(orderId: string) {
+    const session = await auth()
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized")
+    }
+
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+    })
+
+    if (!order) {
+        throw new Error("Order not found")
+    }
+
+    // Ensure the order belongs to the user
+    if (order.userId !== session.user.id) {
+        throw new Error("Unauthorized access to order")
+    }
+
+    // Only allow cancellation if order is PENDING and payment is not PAID
+    if (order.orderStatus !== OrderStatus.PENDING) {
+        throw new Error("Only pending orders can be cancelled")
+    }
+
+    if (order.paymentStatus === "PAID") {
+        throw new Error("Cannot cancel a paid order. Please contact the shop for refunds.")
+    }
+
+    // Update order status to CANCELLED
+    await prisma.order.update({
+        where: { id: orderId },
+        data: { 
+            orderStatus: OrderStatus.CANCELLED,
+            paymentStatus: "CANCELLED",
+        },
+    })
+
+    return { success: true }
+}

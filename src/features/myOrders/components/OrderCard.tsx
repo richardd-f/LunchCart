@@ -11,22 +11,16 @@ type OrderWithDetails = Awaited<ReturnType<typeof getMyOrders>>[number]
 interface OrderCardProps {
     order: OrderWithDetails
     onPay: (orderId: string) => void
+    onCancel: (orderId: string) => void
 }
 
-export default function OrderCard({ order, onPay }: OrderCardProps) {
+export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
     const [showQR, setShowQR] = useState(false)
 
     const isPending = order.orderStatus === 'PENDING'
-    // Payment is pending ONLY if order isn't Cancelled/Rejected and payment status is Pending
     const isPaymentPending = order.paymentStatus === 'PENDING' && isPending
-    
-    // Logic for showing buttons
     const showPayButton = isPaymentPending
-    // Cooking maps to CONFIRMED. READY maps to READY.
-    // Spec: "Ready (if the OrderStatus is READY), show 'Show QR'"
     const showQRButton = order.orderStatus === 'READY'
-
-    // Calculate total items for summary if needed, but we show list
     
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
@@ -108,6 +102,16 @@ export default function OrderCard({ order, onPay }: OrderCardProps) {
                             className="px-6 py-2 bg-[#F97352] hover:bg-[#e06241] text-white text-sm font-medium rounded-full shadow-md transition-all active:scale-95"
                          >
                             Pay
+                        </button>
+                    )}
+
+                    {/* Cancel button - only show for PENDING orders that are NOT PAID */}
+                    {order.orderStatus === 'PENDING' && order.paymentStatus !== 'PAID' && (
+                        <button 
+                            onClick={() => onCancel(order.id)}
+                            className="px-6 py-2 bg-white border-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white text-sm font-medium rounded-full transition-all active:scale-95"
+                        >
+                            Cancel
                         </button>
                     )}
 
