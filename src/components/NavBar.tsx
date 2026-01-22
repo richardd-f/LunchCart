@@ -1,14 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { NavDropdown } from './NavDropdown';
 import Image from 'next/image';
+import { getUserNavInfo, UserNavInfo } from '@/features/nav/action';
 
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
+  const [navInfo, setNavInfo] = useState<UserNavInfo>({ isLoggedIn: false, hasShopRole: false });
+
+  useEffect(() => {
+    if (session?.user) {
+      getUserNavInfo().then(setNavInfo);
+    } else {
+      setNavInfo({ isLoggedIn: false, hasShopRole: false });
+    }
+  }, [session]);
 
   return (
     <nav className="bg-[#F97352] text-white shadow-md sticky top-0 z-50">
@@ -27,21 +36,27 @@ export function NavBar() {
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-6 text-sm font-medium h-16">
-              <Link href="/myOrders" className="hover:text-amber-100 transition-colors">
-                My Orders
-              </Link>
-              <Link href="/manageMenu" className="hover:text-amber-100 transition-colors">
-                Manage Menu
-              </Link>
+              {session?.user && (
+                <Link href="/myOrders" className="hover:text-amber-100 transition-colors">
+                  My Orders
+                </Link>
+              )}
+              {navInfo.hasShopRole && (
+                <Link href="/manageMenu" className="hover:text-amber-100 transition-colors">
+                  Manage Menu
+                </Link>
+              )}
               <Link href="/about" className="hover:text-amber-100 transition-colors">
                 About
               </Link>
-              <Link href="/cart" className="flex items-center gap-1 hover:text-amber-100 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                  <path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z" />
-                </svg>
-                Cart
-              </Link>
+              {session?.user && (
+                <Link href="/cart" className="flex items-center gap-1 hover:text-amber-100 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M2.25 2.25a.75.75 0 000 1.5h1.386c.17 0 .318.114.362.278l2.558 9.592a3.752 3.752 0 00-2.806 3.63c0 .414.336.75.75.75h15.75a.75.75 0 000-1.5H5.378A2.25 2.25 0 017.5 15h11.218a.75.75 0 00.674-.421 60.358 60.358 0 002.96-7.228.75.75 0 00-.525-.965A60.864 60.864 0 005.68 4.509l-.232-.867A1.875 1.875 0 003.636 2.25H2.25zM3.75 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0zM16.5 20.25a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z" />
+                  </svg>
+                  Cart
+                </Link>
+              )}
             </div>
 
             {/* Auth Section */}
@@ -120,20 +135,24 @@ export function NavBar() {
         }`}
       >
         <div className="border-t border-white/10 bg-[#F97352] px-2 pt-2 pb-3 space-y-1 sm:px-3">
-          <Link 
-            href="/myOrders" 
-            className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            My Orders
-          </Link>
-          <Link 
-            href="/manageMenu" 
-            className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Manage Menu
-          </Link>
+          {session?.user && (
+            <Link 
+              href="/myOrders" 
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              My Orders
+            </Link>
+          )}
+          {navInfo.hasShopRole && (
+            <Link 
+              href="/manageMenu" 
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Manage Menu
+            </Link>
+          )}
           <Link 
             href="/about" 
             className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
@@ -141,6 +160,15 @@ export function NavBar() {
           >
             About
           </Link>
+          {session?.user && (
+            <Link 
+              href="/cart" 
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Cart
+            </Link>
+          )}
           {session?.user ? (
             <button
               onClick={() => {
@@ -165,3 +193,4 @@ export function NavBar() {
     </nav>
   );
 }
+
