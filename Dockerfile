@@ -35,16 +35,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy the generated Prisma client (required for runtime)
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
-
 # Prisma schema and config (for migration and seeder)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 
-# Install CLI tools for migrations/seeding (adds to node_modules/.bin)
-RUN pnpm add prisma@7.2.0 tsx dotenv @prisma/client@7.2.0
+# Install CLI tools and regenerate Prisma client for runtime
+RUN pnpm add prisma@7.2.0 tsx dotenv @prisma/client@7.2.0 @prisma/adapter-pg pg \
+    && pnpm prisma generate
 
 EXPOSE 3000
 
