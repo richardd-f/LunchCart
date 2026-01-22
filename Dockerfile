@@ -37,6 +37,7 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 # COPY --from=builder /app/src/generated ./src/generated
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 RUN apk add --no-cache openssl \
     && pnpm add -g prisma@7.2.0 tsx \
     && pnpm add @prisma/adapter-pg pg dotenv
