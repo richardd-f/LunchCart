@@ -24,7 +24,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME:/app/node_modules/.bin:$PATH"
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
@@ -35,12 +35,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Prisma (for migration and seeder from image)
+# Copy the generated Prisma client (required for runtime)
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Prisma schema and config (for migration and seeder)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 
-# Install locally for resolution
-RUN pnpm add prisma@7.2.0 tsx dotenv
+# Install CLI tools for migrations/seeding (adds to node_modules/.bin)
+RUN pnpm add prisma@7.2.0 tsx dotenv @prisma/client@7.2.0
 
 EXPOSE 3000
 
