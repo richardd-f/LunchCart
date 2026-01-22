@@ -1,17 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: [
+    "@prisma/client", 
+    "prisma", 
+    "@prisma/adapter-pg", // Include this since you use the pool adapter
+  ],
   images: {
     remotePatterns: [
-      // Your existing Cloudinary config (Keep this)
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },{
-        protocol: 'https',
-        hostname: 'lh3.googleusercontent.com',
-      }
+      { protocol: 'https', hostname: 'res.cloudinary.com', },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', }
     ],
   },
   output:"standalone"
