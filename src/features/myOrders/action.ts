@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { snap } from "@/lib/midtrans"
-import { OrderStatus } from "@/generated/prisma/enums"
+import { OrderStatus } from "@prisma/client"
 
 export async function getMyOrders(statusFilter?: string) {
     const session = await auth()

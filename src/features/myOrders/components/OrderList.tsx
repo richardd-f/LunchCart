@@ -5,7 +5,7 @@ import Script from 'next/script'
 import OrderFilter from './OrderFilter'
 import OrderCard from './OrderCard'
 import { getMyOrders, createPaymentToken } from '../action'
-import { Order, Shop, OrderItem, Meal, MealImage, Prisma } from '@/generated/prisma/client'
+import { Order, Shop, OrderItem, Meal, MealImage, Prisma } from '@prisma/client'
 import toast from 'react-hot-toast'
 
 // Reuse the type

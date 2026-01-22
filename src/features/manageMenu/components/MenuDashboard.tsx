@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Meal, MealOptionGroup, MealOptionValue, MealImage } from '@/generated/prisma/client';
+import { Meal, MealOptionGroup, MealOptionValue, MealImage } from '@prisma/client';
 import { getMeals, MealWithRelations } from '../action';
 import MenuCard from './MenuCard';
 import MenuFormModal from './MenuFormModal';

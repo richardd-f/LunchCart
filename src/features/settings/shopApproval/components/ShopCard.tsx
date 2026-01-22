@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Shop, ShopStatus, User, UserShopRole } from '@/generated/prisma/client';
+import { Shop, ShopStatus, User, UserShopRole } from '@prisma/client';
 import { updateShopStatus } from '../action';
 import toast from 'react-hot-toast';
 import { showConfirmationToast } from '@/components/ConfirmationToast';

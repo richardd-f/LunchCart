@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import QRCode from "react-qr-code"
-import { Prisma } from '@/generated/prisma/client'
+import { Prisma } from '@prisma/client'
 
 // Define the type based on the include in getMyOrders
 type OrderWithDetails = Prisma.OrderGetPayload<{

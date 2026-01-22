@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CreateMealInput, MealImageInput, OptionGroupInput, createMeal, updateMeal, ActionResult, MealWithRelations, SerializableMeal } from '../action';
-import { Meal, MealCategory, MealOptionGroup, MealOptionValue, MealImage } from '@/generated/prisma/client';
+import { Meal, MealCategory, MealOptionGroup, MealOptionValue, MealImage } from '@prisma/client';
 import UploadButton from '@/components/UploadButton';
 import OptionManager from './OptionManager';
 

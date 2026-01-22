@@ -2,15 +2,8 @@
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { MealCategory, MealImage, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { 
-  Meal, 
-  MealCategory, 
-  MealImage, 
-  MealOptionGroup, 
-  MealOptionValue,
-  Prisma 
-} from '@/generated/prisma/client';
 
 export type ActionResult<T> = {
   success: boolean;

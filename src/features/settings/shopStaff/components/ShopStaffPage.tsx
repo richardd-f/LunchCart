@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { addShopStaff, toggleStaffNotification, removeShopStaff } from '../action';
-import { UserShopRole, User } from '@/generated/prisma/client';
+import { UserShopRole, User } from '@prisma/client';
 import { showConfirmationToast } from '@/components/ConfirmationToast';
 import toast from 'react-hot-toast';
 

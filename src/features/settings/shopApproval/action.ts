@@ -2,7 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ShopStatus } from "@/generated/prisma/client";
+import { ShopStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 export async function getShops(statusFilter?: ShopStatus[]) {

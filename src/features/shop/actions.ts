@@ -1,6 +1,6 @@
 'use server';
 
-import { Shop, ShopStatus } from "@/generated/prisma/client";
+import { Shop, ShopStatus } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ActionResult } from "@/types/ActionResult";

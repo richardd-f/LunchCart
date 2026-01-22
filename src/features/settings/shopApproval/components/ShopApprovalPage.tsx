@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { Shop, ShopStatus, User, UserShopRole } from '@/generated/prisma/client';
+import { Shop, ShopStatus, User, UserShopRole } from '@prisma/client';
 import { getShops } from '../action';
 import { ShopCard } from './ShopCard';
 

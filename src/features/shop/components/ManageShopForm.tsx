@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { updateShop } from "../actions";
 import UploadButton from "@/components/UploadButton";
 import Image from "next/image";
-import type { Shop } from "@/generated/prisma/client";
+import type { Shop } from "@prisma/client";
 
 // Define ShopStatus locally for client-side usage to avoid importing Prisma runtime
 const ShopStatus = {

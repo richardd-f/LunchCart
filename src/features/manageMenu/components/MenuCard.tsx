@@ -1,4 +1,4 @@
-import { Meal, MealCategory, MealImage, MealOptionGroup, MealOptionValue } from '@/generated/prisma/client';
+import { Meal, MealCategory, MealImage, MealOptionGroup, MealOptionValue } from '@prisma/client';
 import { deleteMeal, toggleMealAvailability, MealWithRelations } from '../action';
 import { useState } from 'react';
 import { showConfirmationToast } from '@/components/ConfirmationToast';
