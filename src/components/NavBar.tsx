@@ -42,6 +42,11 @@ export function NavBar() {
                 </Link>
               )}
               {navInfo.hasShopRole && (
+                <Link href="/shopOrders" className="hover:text-amber-100 transition-colors">
+                  Shop Orders
+                </Link>
+              )}
+              {navInfo.hasShopRole && (
                 <Link href="/manageMenu" className="hover:text-amber-100 transition-colors">
                   Manage Menu
                 </Link>
@@ -142,6 +147,15 @@ export function NavBar() {
               onClick={() => setIsMenuOpen(false)}
             >
               My Orders
+            </Link>
+          )}
+          {navInfo.hasShopRole && (
+            <Link 
+              href="/shopOrders" 
+              className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Shop Orders
             </Link>
           )}
           {navInfo.hasShopRole && (

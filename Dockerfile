@@ -1,5 +1,5 @@
 # -------- Stage 1: Build --------
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN pnpm build
 RUN ls -la .next && ls -la .next/standalone
 
 # -------- Stage 2: Runtime --------
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -39,7 +39,8 @@ COPY --from=builder /app/prisma.config.ts ./
 # Copy the generated Prisma client from node_modules
 COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client ./node_modules/@prisma/client
-RUN apk add --no-cache openssl \
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
     && pnpm add -g prisma@7.2.0 tsx \
     && pnpm add @prisma/adapter-pg pg dotenv
 
