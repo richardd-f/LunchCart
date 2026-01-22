@@ -39,7 +39,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
 
-RUN pnpm add -g prisma@7.2.0 tsx dotenv
+# Install locally for resolution
+RUN pnpm add prisma@7.2.0 tsx dotenv
 
 EXPOSE 3000
 
