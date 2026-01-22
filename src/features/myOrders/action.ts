@@ -65,7 +65,15 @@ export async function getMyOrders(statusFilter?: string) {
         },
     })
 
-    return orders
+    // Convert Decimal types to numbers for client component serialization
+    return orders.map(order => ({
+        ...order,
+        totalAmount: Number(order.totalAmount),
+        orderItems: order.orderItems.map(item => ({
+            ...item,
+            price: Number(item.price),
+        })),
+    }))
 }
 
 /**
