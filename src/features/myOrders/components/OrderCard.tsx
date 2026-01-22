@@ -63,6 +63,12 @@ export default function OrderCard({ order, onPay }: OrderCardProps) {
                      `}>
                         {order.orderStatus}
                      </span>
+                     <span className={`
+                        ml-2 px-2.5 py-1 rounded-full text-xs font-semibold
+                        ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
+                     `}>
+                        {order.paymentStatus === 'PAID' ? 'PAID' : 'NOT PAID'}
+                     </span>
                 </div>
             </div>
 

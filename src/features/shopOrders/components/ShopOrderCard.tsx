@@ -107,14 +107,10 @@ export default function ShopOrderCard({ order, onStatusChange }: ShopOrderCardPr
                         {order.orderStatus}
                     </span>
                     <span className={`
-                        px-2 py-0.5 rounded text-xs font-medium
-                        ${order.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-700' : ''}
-                        ${order.paymentStatus === 'PENDING' ? 'bg-amber-100 text-amber-700' : ''}
-                        ${order.paymentStatus === 'FAILED' ? 'bg-red-100 text-red-700' : ''}
-                        ${order.paymentStatus === 'EXPIRED' ? 'bg-gray-100 text-gray-700' : ''}
-                        ${order.paymentStatus === 'CANCELLED' ? 'bg-gray-100 text-gray-700' : ''}
+                        px-2 py-0.5 rounded text-xs font-semibold
+                        ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
                     `}>
-                        Payment: {order.paymentStatus}
+                        {order.paymentStatus === 'PAID' ? 'PAID' : 'NOT PAID'}
                     </span>
                 </div>
             </div>
