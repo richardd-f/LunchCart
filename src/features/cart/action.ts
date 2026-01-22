@@ -207,13 +207,10 @@ export async function createOrder(
     };
 
     try {
-        const transaction = await midtrans.createTransaction(parameter);
-        const snapToken = transaction.token;
-        const redirectUrl = transaction.redirect_url;
-
-        // Save order to DB
-        await prisma.$transaction(async (tx) => {
-            const order = await tx.order.create({
+        // IMPORTANT: Create order in DB FIRST, before Midtrans transaction
+        // This prevents race condition where Midtrans webhook arrives before order exists
+        const order = await prisma.$transaction(async (tx) => {
+            const createdOrder = await tx.order.create({
                 data: {
                     userId: session.user.id,
                     shopId: shopId,
@@ -221,7 +218,7 @@ export async function createOrder(
                     paymentStatus: 'PENDING',
                     midtransOrderId: orderId,
                     totalAmount: calculatedTotal,
-                    snapToken: snapToken,
+                    snapToken: '', // Will be updated after Midtrans transaction
                     pickupDate: pickupDateTime,
                     orderItems: {
                         create: orderItemsData,
@@ -229,7 +226,7 @@ export async function createOrder(
                 },
             });
 
-             // Clear cart for this shop
+            // Clear cart for this shop
             await tx.cartItem.deleteMany({
                 where: {
                     userId: session.user.id,
@@ -238,6 +235,19 @@ export async function createOrder(
                     },
                 },
             });
+
+            return createdOrder;
+        });
+
+        // Now create Midtrans transaction AFTER order exists in DB
+        const transaction = await midtrans.createTransaction(parameter);
+        const snapToken = transaction.token;
+        const redirectUrl = transaction.redirect_url;
+
+        // Update order with the snap token
+        await prisma.order.update({
+            where: { id: order.id },
+            data: { snapToken: snapToken },
         });
 
         return { token: snapToken, redirectUrl };
