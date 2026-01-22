@@ -5,32 +5,11 @@ import Script from 'next/script'
 import OrderFilter from './OrderFilter'
 import OrderCard from './OrderCard'
 import { getMyOrders, createPaymentToken } from '../action'
-import { Order, Shop, OrderItem, Meal, MealImage, Prisma } from '@prisma/client'
+
 import toast from 'react-hot-toast'
 
-// Reuse the type
-type OrderWithDetails = Prisma.OrderGetPayload<{
-    include: {
-        shop: {
-            select: {
-                name: true,
-                profileImage: true
-            }
-        },
-        orderItems: {
-            include: {
-                meal: {
-                    select: {
-                        images: {
-                            where: { isPrimary: true },
-                            take: 1
-                        }
-                    }
-                }
-            }
-        }
-    }
-}>
+// Use the actual return type from getMyOrders (with Decimal converted to number)
+type OrderWithDetails = Awaited<ReturnType<typeof getMyOrders>>[number]
 
 // Define Midtrans Snap global type if not available
 declare global {

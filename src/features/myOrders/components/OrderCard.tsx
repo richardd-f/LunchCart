@@ -3,31 +3,10 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import QRCode from "react-qr-code"
-import { Prisma } from '@prisma/client'
+import { getMyOrders } from '../action'
 
-// Define the type based on the include in getMyOrders
-type OrderWithDetails = Prisma.OrderGetPayload<{
-    include: {
-        shop: {
-            select: {
-                name: true,
-                profileImage: true
-            }
-        },
-        orderItems: {
-            include: {
-                meal: {
-                    select: {
-                        images: {
-                            where: { isPrimary: true },
-                            take: 1
-                        }
-                    }
-                }
-            }
-        }
-    }
-}>
+// Use the actual return type from getMyOrders (with Decimal converted to number)
+type OrderWithDetails = Awaited<ReturnType<typeof getMyOrders>>[number]
 
 interface OrderCardProps {
     order: OrderWithDetails
