@@ -11,6 +11,7 @@ export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
   const [navInfo, setNavInfo] = useState<UserNavInfo>({ isLoggedIn: false, hasShopRole: false });
+  const [mobileShopOpen, setMobileShopOpen] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -154,12 +155,50 @@ export function NavBar() {
 
 
           {navInfo.hasShopRole && (
-            <NavDropdown label={'Shop'} items={[
-                {label: "Shop Orders",href: '/shopOrders'},
-                {label: "Manage Menu",href: '/manageMenu'},
-                {label: "Shop Wallet",href: '/shopWallet'},
-              ]}
-            />
+            <div className="space-y-1">
+              <button
+                onClick={() => setMobileShopOpen(!mobileShopOpen)}
+                className="flex w-full items-center justify-between px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors text-left"
+              >
+                <span>Shop</span>
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor" 
+                  className={`w-4 h-4 transition-transform duration-200 ${mobileShopOpen ? 'rotate-180' : ''}`}
+                >
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              </button>
+              
+              <div 
+                className={`overflow-hidden transition-all duration-200 ease-in-out ${
+                  mobileShopOpen ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <Link 
+                  href="/shopOrders" 
+                  className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Shop Orders
+                </Link>
+                <Link 
+                  href="/manageMenu" 
+                  className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Manage Menu
+                </Link>
+                <Link 
+                  href="/shopWallet" 
+                  className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Shop Wallet
+                </Link>
+              </div>
+            </div>
           )}
 
           <Link 
@@ -178,6 +217,13 @@ export function NavBar() {
               Cart
             </Link>
           )}
+          <Link 
+            href="/settings" 
+            className="block px-3 py-2 rounded-md text-base font-medium hover:bg-white/10 transition-colors"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Settings
+          </Link>
           {session?.user ? (
             <button
               onClick={() => {
