@@ -36,8 +36,9 @@ COPY --from=builder /app/.next/static ./.next/static
 # Prisma (for migration and seeder from image)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./
-# COPY --from=builder /app/src/generated ./src/generated
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Copy the generated Prisma client from node_modules
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client ./node_modules/@prisma/client
 RUN apk add --no-cache openssl \
     && pnpm add -g prisma@7.2.0 tsx \
     && pnpm add @prisma/adapter-pg pg dotenv
