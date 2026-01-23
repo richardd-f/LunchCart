@@ -21,6 +21,7 @@ export type CartItemWithDetails = {
             id: string;
             name: string;
             fixedTimePickup: boolean;
+            orderCutoffMinutes: number;
             pickupTimes: {
               time: string;
             }[];
@@ -80,7 +81,10 @@ export async function getCartItems() {
             ...item.meal,
             price: Number(item.meal.price),
             shop: {
-                ...item.meal.shop,
+                id: item.meal.shop.id,
+                name: item.meal.shop.name,
+                fixedTimePickup: item.meal.shop.fixedTimePickup,
+                orderCutoffMinutes: item.meal.shop.orderCutoffMinutes,
                 pickupTimes: item.meal.shop.pickupTimes || [],
             }
         },
@@ -144,6 +148,29 @@ export async function createOrder(
 
     if (cartItems.length === 0) {
         return { error: 'No items in cart for this shop.' };
+    }
+
+    // Fetch shop to get orderCutoffMinutes
+    const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        select: { orderCutoffMinutes: true, name: true },
+    });
+
+    if (!shop) {
+        return { error: 'Shop not found.' };
+    }
+
+    // Validate order cutoff time
+    if (shop.orderCutoffMinutes > 0) {
+        const now = new Date();
+        const cutoffDeadline = new Date(pickupDateTime.getTime() - shop.orderCutoffMinutes * 60 * 1000);
+        
+        if (now > cutoffDeadline) {
+            const hoursBeforeNeeded = Math.ceil(shop.orderCutoffMinutes / 60);
+            return { 
+                error: `Orders for this pickup time must be placed at least ${shop.orderCutoffMinutes} minutes (${hoursBeforeNeeded}h) before pickup. Please choose a later pickup time.` 
+            };
+        }
     }
 
     // Calculate total purely on server side to prevent tampering

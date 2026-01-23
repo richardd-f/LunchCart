@@ -129,16 +129,17 @@ model VerificationToken {
 }
 
 model Shop {
-  id              String     @id @default(cuid())
-  name            String     @unique
-  address         String
-  phone           String
-  profileImage    String?    @map("profileImage")
-  description     String
-  status          ShopStatus @default(PENDING)
-  fixedTimePickup Boolean    @default(false) @map("fixed_time_pickup")
-  createdAt       DateTime   @default(now()) @map("created_at")
-  updatedAt       DateTime   @updatedAt @map("updated_at")
+  id                 String     @id @default(cuid())
+  name               String     @unique
+  address            String
+  phone              String
+  profileImage       String?    @map("profileImage")
+  description        String
+  status             ShopStatus @default(PENDING)
+  fixedTimePickup    Boolean    @default(false) @map("fixed_time_pickup")
+  orderCutoffMinutes Int        @default(0) @map("order_cutoff_minutes")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
 
   // Relations
   meals       Meal[]

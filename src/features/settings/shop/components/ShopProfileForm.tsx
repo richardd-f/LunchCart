@@ -15,6 +15,7 @@ interface ShopProfileFormProps {
     profileImage: string | null;
     description: string;
     fixedTimePickup: boolean;
+    orderCutoffMinutes: number;
     pickupTimes: {
         id: string;
         time: string;
@@ -55,6 +56,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
   };
 
   const [isFixedTime, setIsFixedTime] = useState(initialData.fixedTimePickup);
+  const [orderCutoffMinutes, setOrderCutoffMinutes] = useState(initialData.orderCutoffMinutes || 0);
   const [pickupTimes, setPickupTimes] = useState<string[]>(
     initialData.pickupTimes && initialData.pickupTimes.length > 0 
         ? initialData.pickupTimes.map((pt: any) => pt.time) 
@@ -284,6 +286,29 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                 ? "Customers can only choose from the specific times you provide." 
                 : "Customers can choose any time for pickup."}
             </p>
+
+            {/* Order Cutoff Time Setting */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <label htmlFor="orderCutoffMinutes" className="block text-sm font-medium text-gray-700">
+                Order Cutoff Time (minutes before pickup)
+              </label>
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  type="number"
+                  id="orderCutoffMinutes"
+                  min="0"
+                  step="30"
+                  value={orderCutoffMinutes}
+                  onChange={(e) => setOrderCutoffMinutes(parseInt(e.target.value) || 0)}
+                  className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                />
+                <span className="text-sm text-gray-500">minutes</span>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Set to 0 to allow orders at any time. Example: 120 = customers must order at least 2 hours before pickup.
+              </p>
+              <input type="hidden" name="orderCutoffMinutes" value={orderCutoffMinutes.toString()} />
+            </div>
           </div>
 
         </div>
