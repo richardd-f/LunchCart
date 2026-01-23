@@ -63,13 +63,13 @@ export function ShopApprovalPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveFilter(tab.value)}
             className={`
-              py-2 px-4 border-b-2 font-medium text-sm focus:outline-none transition-colors
+              py-2 px-4 border-b-2 font-medium text-sm focus:outline-none transition-colors whitespace-nowrap
               ${
                 activeFilter === tab.value
                   ? 'border-[#F97352] text-[#F97352]'

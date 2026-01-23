@@ -102,19 +102,19 @@ export function ShopCard({ shop, onStatusChange }: ShopCardProps) {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 border border-gray-200">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
+    <div className="bg-white shadow rounded-lg p-4 sm:p-6 border border-gray-200">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+        <div className="flex-1 w-full">
+          <div className="flex items-start sm:items-center gap-3 mb-2">
              {shop.profileImage && (
                 <img 
                     src={shop.profileImage} 
                     alt={shop.name} 
-                    className="w-12 h-12 rounded-full object-cover border border-gray-200"
+                    className="w-12 h-12 rounded-full object-cover border border-gray-200 shrink-0"
                 />
              )}
-             <div>
-                <h3 className="text-lg font-medium text-gray-900">{shop.name}</h3>
+             <div className="min-w-0">
+                <h3 className="text-lg font-medium text-gray-900 break-words">{shop.name}</h3>
                 <div className="flex gap-2 mt-1">
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(shop.status)}`}>
                     {shop.status}
@@ -123,14 +123,14 @@ export function ShopCard({ shop, onStatusChange }: ShopCardProps) {
              </div>
           </div>
           
-          <div className="space-y-1 text-sm text-gray-600 mt-4">
+          <div className="space-y-1 text-sm text-gray-600 mt-4 break-words">
             <p><span className="font-semibold">Owner:</span> {owner ? `${owner.name} (${owner.email})` : 'Unknown'}</p>
             <p><span className="font-semibold">Address:</span> {shop.address}</p>
             <p><span className="font-semibold">Phone:</span> {shop.phone}</p>
             <p><span className="font-semibold">Description:</span> {shop.description}</p>
           </div>
         </div>
-        <div className="ml-4">
+        <div className="w-full md:w-auto flex justify-end md:ml-4">
           {renderActions()}
         </div>
       </div>
