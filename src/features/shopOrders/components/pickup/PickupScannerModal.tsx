@@ -35,6 +35,72 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
     const [isCompleting, setIsCompleting] = useState(false)
     const [isCompleted, setIsCompleted] = useState(false)
     const lastScannedRef = useRef<string | null>(null)
+    const audioContextRef = useRef<AudioContext | null>(null)
+    const hasPlayedMatchSoundRef = useRef<boolean>(false)
+
+    // Initialize audio context lazily
+    const getAudioContext = () => {
+        if (!audioContextRef.current) {
+            audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+        }
+        return audioContextRef.current
+    }
+
+    // Success sound: Two high-pitched tones like "tring" (elevator ding)
+    const playSuccessSound = () => {
+        try {
+            const ctx = getAudioContext()
+            const now = ctx.currentTime
+
+            // First tone
+            const osc1 = ctx.createOscillator()
+            const gain1 = ctx.createGain()
+            osc1.connect(gain1)
+            gain1.connect(ctx.destination)
+            osc1.frequency.value = 880 // A5
+            osc1.type = 'sine'
+            gain1.gain.setValueAtTime(0.3, now)
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15)
+            osc1.start(now)
+            osc1.stop(now + 0.15)
+
+            // Second tone (slightly higher)
+            const osc2 = ctx.createOscillator()
+            const gain2 = ctx.createGain()
+            osc2.connect(gain2)
+            gain2.connect(ctx.destination)
+            osc2.frequency.value = 1175 // D6
+            osc2.type = 'sine'
+            gain2.gain.setValueAtTime(0.3, now + 0.12)
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3)
+            osc2.start(now + 0.12)
+            osc2.stop(now + 0.3)
+        } catch (e) {
+            console.error('Failed to play success sound:', e)
+        }
+    }
+
+    // Fail sound: Low frequency buzz like "teeeet"
+    const playFailSound = () => {
+        try {
+            const ctx = getAudioContext()
+            const now = ctx.currentTime
+
+            const osc = ctx.createOscillator()
+            const gain = ctx.createGain()
+            osc.connect(gain)
+            gain.connect(ctx.destination)
+            osc.frequency.value = 220 // A3 (low tone)
+            osc.type = 'square'
+            gain.gain.setValueAtTime(0.2, now)
+            gain.gain.setValueAtTime(0.2, now + 0.4)
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5)
+            osc.start(now)
+            osc.stop(now + 0.5)
+        } catch (e) {
+            console.error('Failed to play fail sound:', e)
+        }
+    }
 
     // Reset state when modal opens
     useEffect(() => {
@@ -46,6 +112,7 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
             setIsCompleting(false)
             setIsCompleted(false)
             lastScannedRef.current = null
+            hasPlayedMatchSoundRef.current = false
         }
     }, [isOpen])
 
@@ -77,9 +144,12 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
 
                 setScannedOrder(cleanData)
                 setStage('ITEM_SCAN')
+                hasPlayedMatchSoundRef.current = false // Reset for stage 2
+                playSuccessSound() // Order is READY - play success sound
                 toast.success("Order Verified! Proceed to scan items.")
             } else {
                 setError(result.error || "Invalid QR Code")
+                playFailSound() // Order not READY or invalid - play fail sound
                 toast.error(result.error || "Invalid QR Code")
                 // Clear ref after delay so they can try somewhat same code again if it was a mis-scan
                 setTimeout(() => { lastScannedRef.current = null }, 2000)
@@ -99,8 +169,15 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
 
         if (match && !matchedItem) {
             setMatchedItem(true)
+            // Play success sound only once when match is first detected
+            if (!hasPlayedMatchSoundRef.current) {
+                playSuccessSound()
+                hasPlayedMatchSoundRef.current = true
+            }
         } else if (!match && matchedItem) {
             setMatchedItem(false)
+            // Reset so sound plays again if QR is re-detected
+            hasPlayedMatchSoundRef.current = false
         }
     }
 
