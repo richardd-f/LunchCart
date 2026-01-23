@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { getShopOrders, updateOrderStatus } from '../action'
 import { OrderStatus, PaymentStatus } from '@prisma/client'
 import toast from 'react-hot-toast'
+import { showConfirmationToast } from '@/components/ConfirmationToast'
 
 // Use the actual return type from getShopOrders
 type OrderWithDetails = Awaited<ReturnType<typeof getShopOrders>>[number]
@@ -168,7 +169,12 @@ export default function ShopOrderCard({ order, onStatusChange }: ShopOrderCardPr
                 <div className="flex gap-2">
                     {actionButton && (
                         <button 
-                            onClick={() => handleStatusUpdate(actionButton.newStatus)}
+                            onClick={() => {
+                                showConfirmationToast(
+                                    `Are you sure you want to mark this order as ${actionButton.newStatus}?`,
+                                    () => handleStatusUpdate(actionButton.newStatus)
+                                )
+                            }}
                             disabled={isLoading}
                             className={`px-5 py-2 text-white text-sm font-medium rounded-full shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${actionButton.className}`}
                         >
