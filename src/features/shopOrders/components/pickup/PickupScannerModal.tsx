@@ -93,33 +93,14 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
     }
 
     const handleStage2Scan = (barcodes: IDetectedBarcode[]) => {
-        // Stage 2: We are looking for a QR code that matches scanneOrder.id
-        // The scanner component (if utilizing native overlay) might highlight it,
-        // but here we just want to confirm *if* we see it.
-        
-        if (!scannedOrder) return
+        if (!scannedOrder || isCompleted) return
 
         const match = barcodes.find(bc => bc.rawValue === scannedOrder.id)
 
-        if (match) {
-            if (!matchedItem) {
-                setMatchedItem(true)
-                toast.success("MATCH FOUND!", {
-                    icon: '✅',
-                    style: {
-                        background: '#10B981', // Green-500
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        fontSize: '1.2rem'
-                    },
-                    duration: 2000
-                })
-            }
-        } else {
-             // Reset match status immediately when QR is no longer detected
-             if (matchedItem && !isCompleted) {
-                 setMatchedItem(false)
-             }
+        if (match && !matchedItem) {
+            setMatchedItem(true)
+        } else if (!match && matchedItem) {
+            setMatchedItem(false)
         }
     }
 
