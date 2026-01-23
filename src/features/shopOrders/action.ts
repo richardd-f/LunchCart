@@ -3,6 +3,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client"
+import { sendWhatsApp } from "@/lib/gowa"
 
 // Types for filter parameters
 export interface ShopOrderFilters {
@@ -260,9 +261,13 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
         throw new Error("Unauthorized: You must be a shop owner or staff")
     }
 
-    // Fetch order and verify it belongs to the shop
+    // Fetch order with user and shop details for notification
     const order = await prisma.order.findUnique({
         where: { id: orderId },
+        include: {
+            user: { select: { phone: true, name: true } },
+            shop: { select: { name: true } },
+        },
     })
 
     if (!order) {
@@ -297,6 +302,36 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
         where: { id: orderId },
         data: { orderStatus: newStatus },
     })
+
+    // Send WhatsApp notification when order is READY for pickup
+    if (newStatus === OrderStatus.READY && order.user?.phone) {
+        try {
+            const formattedPickup = order.pickupDate 
+                ? new Date(order.pickupDate).toLocaleString('id-ID', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                })
+                : 'sesuai jadwal'
+
+            const message = `✅ *Pesanan Siap!*
+
+Halo ${order.user.name || 'Pelanggan'},
+
+Pesanan Anda di *${order.shop?.name || 'toko kami'}* sudah siap untuk diambil! 🎉
+
+📅 *Waktu Pickup:* ${formattedPickup}
+
+Silakan datang ke lokasi pickup sesuai waktu tersebut.
+
+Terima kasih telah memesan! 🙏`
+
+            sendWhatsApp(order.user.phone, message).catch((err) => {
+                console.error('Failed to send pickup notification to customer:', err)
+            })
+        } catch (notifError) {
+            console.error('Failed to send pickup notification:', notifError)
+        }
+    }
 
     return { success: true, orderStatus: updatedOrder.orderStatus }
 }
