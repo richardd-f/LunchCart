@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import QRScanner from './QRScanner'
-import { verifyPickupOrder } from '../../action'
+import { verifyPickupOrder, updateOrderStatus } from '../../action'
 import { IDetectedBarcode } from '@yudiel/react-qr-scanner'
+import { OrderStatus } from '@prisma/client'
 import toast from 'react-hot-toast'
 
 interface PickupScannerModalProps {
@@ -31,6 +32,8 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [matchedItem, setMatchedItem] = useState<boolean>(false)
+    const [isCompleting, setIsCompleting] = useState(false)
+    const [isCompleted, setIsCompleted] = useState(false)
     const lastScannedRef = useRef<string | null>(null)
 
     // Reset state when modal opens
@@ -40,6 +43,8 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
             setScannedOrder(null)
             setError(null)
             setMatchedItem(false)
+            setIsCompleting(false)
+            setIsCompleted(false)
             lastScannedRef.current = null
         }
     }, [isOpen])
@@ -111,11 +116,29 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
                 })
             }
         } else {
-             // Optional: Reset match status if lost, or keep it "Found" until manually reset?
-             // For now, let's keep it sticky for a moment so the UI doesn't flicker too much
-             if (matchedItem) {
-                 setTimeout(() => setMatchedItem(false), 3000) // Reset after 3s of no match
+             // Reset match status immediately when QR is no longer detected
+             if (matchedItem && !isCompleted) {
+                 setMatchedItem(false)
              }
+        }
+    }
+
+    const handleMarkAsCompleted = async () => {
+        if (!scannedOrder || isCompleting) return
+
+        setIsCompleting(true)
+        try {
+            await updateOrderStatus(scannedOrder.id, OrderStatus.COMPLETED)
+            setIsCompleted(true)
+            toast.success("Order marked as completed!", {
+                icon: '🎉',
+                duration: 3000
+            })
+        } catch (err) {
+            console.error(err)
+            toast.error(err instanceof Error ? err.message : "Failed to mark as completed")
+        } finally {
+            setIsCompleting(false)
         }
     }
 
@@ -186,11 +209,42 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
                                     Point at Item QR Codes
                                 </div>
                                 
-                                {matchedItem && (
-                                    <div className="absolute inset-0 border-4 border-green-500 z-20 animate-pulse pointer-events-none shadow-[0_0_20px_rgba(16,185,129,0.5)] bg-green-500/10 flex items-center justify-center">
-                                         <div className="bg-green-600 text-white px-4 py-2 rounded-xl font-bold text-xl shadow-lg border-2 border-white transform scale-110 transition-transform">
-                                            MATCH FOUND!
+                                {(matchedItem || isCompleted) && (
+                                    <div className={`absolute inset-0 border-4 z-20 flex items-center justify-center flex-col gap-3 ${
+                                        isCompleted 
+                                            ? 'border-blue-500 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.5)]' 
+                                            : 'border-green-500 bg-green-500/10 shadow-[0_0_20px_rgba(16,185,129,0.5)] animate-pulse'
+                                    }`}>
+                                         <div className={`px-4 py-2 rounded-xl font-bold text-xl shadow-lg border-2 border-white transform scale-110 transition-transform ${
+                                             isCompleted ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
+                                         }`}>
+                                            {isCompleted ? '✅ COMPLETED!' : 'MATCH FOUND!'}
                                          </div>
+                                         
+                                         {matchedItem && !isCompleted && (
+                                             <button
+                                                 onClick={handleMarkAsCompleted}
+                                                 disabled={isCompleting}
+                                                 className="bg-white text-green-700 px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-green-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                                             >
+                                                 {isCompleting ? (
+                                                     <>
+                                                         <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                         </svg>
+                                                         Completing...
+                                                     </>
+                                                 ) : (
+                                                     <>
+                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                         </svg>
+                                                         Mark as Completed
+                                                     </>
+                                                 )}
+                                             </button>
+                                         )}
                                     </div>
                                 )}
                             </div>
@@ -216,6 +270,9 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
                                     setStage('CUSTOMER_SCAN')
                                     setScannedOrder(null)
                                     setMatchedItem(false)
+                                    setIsCompleted(false)
+                                    setIsCompleting(false)
+                                    lastScannedRef.current = null // Reset to allow scanning new QR codes
                                 }}
                                 className="w-full py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-colors"
                             >
