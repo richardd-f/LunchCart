@@ -163,16 +163,18 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                         </div>
                     ))}
 
-                    {/* Notes */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                        <textarea
-                            value={notes}
-                            onChange={e => setNotes(e.target.value)}
-                            placeholder="Example: No spicy, extra sauce..."
-                            className="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] text-sm p-3 bg-gray-50 border h-24 resize-none"
-                        />
-                    </div>
+                    {/* Notes - only show if meal allows notes */}
+                    {meal.allowNotes && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                            <textarea
+                                value={notes}
+                                onChange={e => setNotes(e.target.value)}
+                                placeholder="Example: No spicy, extra sauce..."
+                                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] text-sm p-3 bg-gray-50 border h-24 resize-none"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer Actions */}

@@ -19,6 +19,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
   const [price, setPrice] = useState<number>(0);
   const [category, setCategory] = useState<MealCategory>('MEAL');
   const [isAvailable, setIsAvailable] = useState(true);
+  const [allowNotes, setAllowNotes] = useState(false);
   const [images, setImages] = useState<MealImageInput[]>([]);
   const [optionGroups, setOptionGroups] = useState<OptionGroupInput[]>([]);
   
@@ -36,6 +37,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
         setPrice(initialData.price);
         setCategory(initialData.category);
         setIsAvailable(initialData.isAvailable);
+        setAllowNotes(initialData.allowNotes ?? false);
         
         // Map images
         setImages(initialData.images.map(img => ({
@@ -63,6 +65,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
         setPrice(0);
         setCategory('MEAL');
         setIsAvailable(true);
+        setAllowNotes(false);
         setImages([]);
         setOptionGroups([]);
       }
@@ -90,6 +93,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
       price,
       category,
       isAvailable,
+      allowNotes,
       images: processedImages,
       optionGroups,
     };
@@ -266,6 +270,17 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                     className="h-4 w-4 text-[#F97352] focus:ring-[#F97352] border-gray-300 rounded"
                   />
                  <label htmlFor="isAvailable" className="text-sm font-medium text-gray-700">Available for Ordering</label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                 <input
+                    type="checkbox"
+                    id="allowNotes"
+                    checked={allowNotes}
+                    onChange={(e) => setAllowNotes(e.target.checked)}
+                    className="h-4 w-4 text-[#F97352] focus:ring-[#F97352] border-gray-300 rounded"
+                  />
+                 <label htmlFor="allowNotes" className="text-sm font-medium text-gray-700">Allow Customer Notes</label>
               </div>
             </div>
 

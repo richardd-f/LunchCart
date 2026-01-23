@@ -40,6 +40,7 @@ export interface SerializableMeal {
   price: number; // Changed from Decimal
   category: MealCategory;
   isAvailable: boolean;
+  allowNotes: boolean;
   createdAt: Date;
   updatedAt: Date;
   images: MealImage[];
@@ -76,6 +77,7 @@ export type CreateMealInput = {
   price: number;
   category: MealCategory;
   isAvailable: boolean;
+  allowNotes: boolean;
   images: MealImageInput[];
   optionGroups: OptionGroupInput[];
 };
@@ -174,6 +176,7 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
           price: data.price,
           category: data.category,
           isAvailable: data.isAvailable,
+          allowNotes: data.allowNotes,
         }
       });
 
@@ -273,6 +276,7 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
           price: data.price,
           category: data.category,
           isAvailable: data.isAvailable,
+          allowNotes: data.allowNotes,
         }
       });
 

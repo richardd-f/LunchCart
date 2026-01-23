@@ -3,7 +3,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { Meal, MealOptionValue } from '@prisma/client'
+import { Meal, MealCategory, MealOptionValue } from '@prisma/client'
 
 // -- Types --
 export interface AddToCartInput {
@@ -19,8 +19,10 @@ export interface MealWithDetails {
     name: string
     description: string
     price: number
-    category: "MEAL" | "SNACK" | "DRINK" | "DESSERT"
+    // category: "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE"
+    category: MealCategory
     isAvailable: boolean
+    allowNotes: boolean
     createdAt: Date
     updatedAt: Date
     images: { id: string, imagePath: string, isPrimary: boolean }[]
@@ -114,7 +116,8 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
     return {
         ...meal,
         price: Number(meal.price),
-        category: meal.category as "MEAL" | "SNACK" | "DRINK" | "DESSERT", 
+        allowNotes: meal.allowNotes,
+        category: meal.category as "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE", 
         optionGroups: meal.optionGroups.map(group => ({
             ...group,
             values: group.values.map(val => ({

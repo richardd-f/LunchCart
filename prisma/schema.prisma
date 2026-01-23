@@ -189,6 +189,7 @@ model Meal {
   isAvailable Boolean      @default(true) @map("isAvailable")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
+  allowNotes  Boolean      @default(false) @map("allowNotes")
 
   // Relations
   shop         Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
