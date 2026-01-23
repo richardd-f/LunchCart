@@ -291,7 +291,6 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
         throw new Error(`Invalid status transition: ${order.orderStatus} -> ${newStatus}`)
     }
 
-    // For PENDING -> CONFIRMED, payment must be PAID
     if (order.orderStatus === OrderStatus.PENDING && newStatus === OrderStatus.CONFIRMED) {
         if (order.paymentStatus !== PaymentStatus.PAID) {
             throw new Error("Cannot confirm order: Payment is not completed")
@@ -313,7 +312,7 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
                 })
                 : 'sesuai jadwal'
 
-            const message = `✅ *Pesanan Siap!*
+            const message = `*Pesanan Siap!*
 
 Halo ${order.user.name || 'Pelanggan'},
 
