@@ -4,14 +4,17 @@ import { prisma } from "@/lib/prisma";
 import { ActionResult } from "@/types/ActionResult";
 import { ShopWithMeals } from "./type";
 
-export async function getHomepageData(): Promise<ActionResult<ShopWithMeals[]>> {
+export async function getHomepageData(searchQuery?: string): Promise<ActionResult<ShopWithMeals[]>> {
   try {
+    const query = searchQuery?.trim().toLowerCase();
+
     const shops = await prisma.shop.findMany({
       where: {
         status: 'OPEN',
         meals: {
           some: {
             isAvailable: true,
+            ...(query ? { name: { contains: query, mode: 'insensitive' } } : {}),
           }
         }
       },
@@ -19,6 +22,7 @@ export async function getHomepageData(): Promise<ActionResult<ShopWithMeals[]>> 
         meals:{
           where:{
             isAvailable: true,
+            ...(query ? { name: { contains: query, mode: 'insensitive' } } : {}),
           },
           include:{
             images:{
