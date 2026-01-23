@@ -19,7 +19,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
   return (
     <div className="mb-8 last:mb-24">
       <div className="flex justify-between items-center px-4 mb-3">
-        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <h2 className="text-lg md:text-2xl font-bold text-gray-800 flex items-center gap-2">
            {shopName}
         </h2>
         <Link href={`/shop/${shopId}`} className="text-xs font-semibold text-[#F97352] hover:text-[#e05f3e]">

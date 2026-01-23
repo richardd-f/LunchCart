@@ -40,7 +40,7 @@ export default async function Home() {
         <SearchBar />
       </div>
 
-      <div className="max-w-4xl mx-auto mt-4 space-y-2">
+      <div className="max-w-6xl mx-auto mt-4 space-y-2">
         {shops.map((shop) => (
            <ShopSection 
              key={shop.id}
