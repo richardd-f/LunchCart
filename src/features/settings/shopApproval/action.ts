@@ -62,3 +62,23 @@ export async function updateShopStatus(shopId: string, newStatus: ShopStatus) {
         return { success: false, error: "Failed to update shop status" };
     }
 }
+
+export async function deleteShop(shopId: string) {
+    const session = await auth();
+
+    if (session?.user?.role !== "ADMIN") {
+        throw new Error("Unauthorized: Admin access required");
+    }
+
+    try {
+        await prisma.shop.delete({
+            where: { id: shopId }
+        });
+
+        revalidatePath("/settings/shopApproval");
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting shop:", error);
+        return { success: false, error: "Failed to delete shop" };
+    }
+}
