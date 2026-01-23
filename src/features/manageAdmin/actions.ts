@@ -62,16 +62,24 @@ export async function getUsers(page: number = 1, query: string = ""): Promise<Ac
 export async function updateUserRole(userId: string, newRole: UserRole): Promise<ActionResult<void>> {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.id) {
       return { success: false, error: "Unauthorized" };
     }
 
-    // Prevent removing own admin access (optional but good practice)
+    // Check the current user's role directly from the database (not session)
+    // This prevents stale session attacks where user was demoted but session still says ADMIN
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    });
+
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return { success: false, error: "Unauthorized: You are not an admin" };
+    }
+
+    // Prevent removing own admin access
     if (userId === session.user.id && newRole !== "ADMIN") {
-         // return { success: false, error: "Cannot remove your own admin status" }; 
-         // Optional: let them shoot themselves in the foot? Probably safer to block.
-         // But prompt didn't strictly say so. I'll add a check for safety.
-         return { success: false, error: "You cannot change your own role." };
+      return { success: false, error: "You cannot change your own role." };
     }
 
     await prisma.user.update({

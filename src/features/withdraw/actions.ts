@@ -14,8 +14,18 @@ export type WithdrawShopItem = {
 export async function getWithdrawalShops(query: string = ""): Promise<ActionResult<WithdrawShopItem[]>> {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.id) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    // Check admin role from database to prevent stale session attacks
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    });
+
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return { success: false, error: "Unauthorized: You are not an admin" };
     }
 
     const shops = await prisma.shop.findMany({
@@ -54,8 +64,18 @@ export async function getWithdrawalShops(query: string = ""): Promise<ActionResu
 export async function withdrawFromShop(shopId: string, amount: number, proofImage: string): Promise<ActionResult<void>> {
   try {
     const session = await auth();
-    if (!session?.user || session.user.role !== "ADMIN") {
+    if (!session?.user?.id) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    // Check admin role from database to prevent stale session attacks
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true }
+    });
+
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return { success: false, error: "Unauthorized: You are not an admin" };
     }
 
     if (!amount || amount <= 0) {
