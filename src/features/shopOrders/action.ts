@@ -334,3 +334,58 @@ Terima kasih telah memesan! 🙏`
 
     return { success: true, orderStatus: updatedOrder.orderStatus }
 }
+
+/**
+ * Verify and retrieve order details for pickup by scanning user's QR code (Stage 1)
+ */
+export async function verifyPickupOrder(orderId: string) {
+    const shopId = await getUserShopId()
+    if (!shopId) {
+        throw new Error("Unauthorized: You must be a shop owner or staff")
+    }
+
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+            user: { select: { name: true, image: true, phone: true } },
+            orderItems: {
+               include: {
+                   meal: { select: { name: true } },
+                   options: { select: { optionName: true } }
+               }
+            }
+        }
+    })
+
+    if (!order) {
+        return { success: false, error: "Order not found" }
+    }
+
+    if (order.shopId !== shopId) {
+        return { success: false, error: "Order does not belong to this shop" }
+    }
+
+    if (order.orderStatus !== OrderStatus.READY) {
+        return { 
+            success: false, 
+            error: `Order is ${order.orderStatus}, not READY for pickup.`,
+            orderStatus: order.orderStatus 
+        }
+    }
+
+    // Return essential data for verification
+    return {
+        success: true,
+        data: {
+            id: order.id,
+            customerName: order.user?.name || "Customer",
+            itemCount: order.orderItems.reduce((acc, item) => acc + item.quantity, 0),
+            items: order.orderItems.map(item => ({
+                name: item.meal?.name || "Unknown Item",
+                quantity: item.quantity,
+                options: item.options.map(o => o.optionName)
+            })),
+            pickupDate: order.pickupDate
+        }
+    }
+}
