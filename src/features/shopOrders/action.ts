@@ -6,9 +6,9 @@ import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client"
 
 // Types for filter parameters
 export interface ShopOrderFilters {
-    pickupDate?: string // ISO date string "YYYY-MM-DD"
-    mealId?: string
-    optionName?: string // Filter by specific option name
+    pickupDate?: string // ISO date string "YYYY-MM-DD" - single day filter
+    mealIds?: string[] // Multi-select meal IDs
+    optionNames?: string[] // Multi-select option names
     statusFilter?: string // "All", "Pending", "Confirmed", "Ready", "Completed"
 }
 
@@ -82,11 +82,11 @@ export async function getShopOrders(filters: ShopOrderFilters = {}) {
         }
     }
 
-    // Meal filter - applied via orderItems
-    if (filters.mealId) {
+    // Meal filter - applied via orderItems (multi-select)
+    if (filters.mealIds && filters.mealIds.length > 0) {
         whereClause.orderItems = {
             some: {
-                mealId: filters.mealId,
+                mealId: { in: filters.mealIds },
             },
         }
     }
@@ -170,7 +170,7 @@ export async function getOrderAggregation(filters: ShopOrderFilters = {}): Promi
     const orderItems = await prisma.orderItem.findMany({
         where: {
             order: orderWhereClause,
-            ...(filters.mealId ? { mealId: filters.mealId } : {}),
+            ...(filters.mealIds && filters.mealIds.length > 0 ? { mealId: { in: filters.mealIds } } : {}),
         },
         include: {
             options: true,
