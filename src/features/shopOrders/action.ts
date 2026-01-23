@@ -297,10 +297,58 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
         }
     }
 
-    const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { orderStatus: newStatus },
-    })
+    // Use transaction for CONFIRMED -> READY to also credit the shop wallet
+    if (order.orderStatus === OrderStatus.CONFIRMED && newStatus === OrderStatus.READY) {
+        await prisma.$transaction(async (tx) => {
+            // Update order status
+            await tx.order.update({
+                where: { id: orderId },
+                data: { orderStatus: newStatus },
+            })
+
+            // Find or create shop wallet
+            let wallet = await tx.shopWallet.findUnique({
+                where: { shopId: order.shopId },
+            })
+
+            if (!wallet) {
+                wallet = await tx.shopWallet.create({
+                    data: {
+                        shopId: order.shopId,
+                        balance: 0,
+                        pendingBalance: 0,
+                    },
+                })
+            }
+
+            // Create credit transaction for the order amount
+            await tx.transaction.create({
+                data: {
+                    walletId: wallet.id,
+                    orderId: order.id,
+                    type: 'credit',
+                    amount: order.totalAmount,
+                    description: `Order #${order.id.slice(-6).toUpperCase()} - Credit from completed sale`,
+                },
+            })
+
+            // Update wallet balance
+            await tx.shopWallet.update({
+                where: { id: wallet.id },
+                data: {
+                    balance: {
+                        increment: order.totalAmount,
+                    },
+                },
+            })
+        })
+    } else {
+        // For other status transitions, just update the order
+        await prisma.order.update({
+            where: { id: orderId },
+            data: { orderStatus: newStatus },
+        })
+    }
 
     // Send WhatsApp notification when order is READY for pickup
     if (newStatus === OrderStatus.READY && order.user?.phone) {
@@ -332,7 +380,7 @@ Terima kasih telah memesan! 🙏`
         }
     }
 
-    return { success: true, orderStatus: updatedOrder.orderStatus }
+    return { success: true, orderStatus: newStatus }
 }
 
 /**
