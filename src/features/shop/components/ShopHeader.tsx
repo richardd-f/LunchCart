@@ -9,14 +9,14 @@ export function ShopHeader({ shop }: ShopHeaderProps) {
   const isOpen = shop.status === 'OPEN';
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-orange-100/50 overflow-hidden mb-8">
+    <div className="bg-white rounded-2xl shadow-sm border border-orange-500/80 overflow-hidden mb-8">
       {/* Cover / Background */}
-      <div className="h-10 bg-gradient-to-b from-[#F97352] to-white opacity-90 relative">
+      <div className="h-10 opacity-90 relative">
         <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10" /> 
       </div>
 
-      <div className="px-6 pb-6 relative bg-gradient-to-t from-white via-white to-orange-500">
-        <div className="flex flex-col md:flex-row items-start md:items-end gap-6 pt-10 -mt-12">
+      <div className="px-6 pb-6 relative ">
+        <div className="flex  md:flex-row items-start md:items-end gap-6 pt-10 -mt-12">
           
           {/* Profile Image */}
           <div className="relative h-32 w-32 rounded-2xl border-4 border-white shadow-md overflow-hidden bg-white shrink-0">

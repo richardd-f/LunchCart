@@ -9,7 +9,7 @@ export function NewMenuSection({ menus }: NewMenuSectionProps) {
   if (!menus || menus.length === 0) return null;
 
   return (
-    <section className="mb-12 py-1 px-4 sm:px-8">
+    <section className="mb-12 py-1 px-2 sm:px-8">
       {/* Main Card Container */}
       <div className="relative w-full rounded-3xl bg-[#F97352] overflow-hidden shadow-xl shadow-orange-200/50">
         
@@ -52,13 +52,13 @@ export function NewMenuSection({ menus }: NewMenuSectionProps) {
 
           {/* Horizontal Scroll Area */}
           <div className="w-full">
-            <div className="flex gap-5 justify-center overflow-x-auto pb-6 px-6 snap-x scroll-pl-6 hide-scrollbar pt-2">
+            <div className="flex gap-5 justify-start overflow-x-auto pb-6 px-6 snap-x snap-mandatory hide-scrollbar pt-2 scroll-smooth">
               {menus.map((menu) => (
                 <div 
                   key={menu.id} 
-                  className="min-w-[240px] w-[240px] md:min-w-[280px] md:w-[280px] snap-start"
+                  className="min-w-[80vw] w-[80vw] sm:min-w-[300px] sm:w-[300px] md:min-w-[340px] md:w-[340px] snap-center"
                 >
-                  <div className="transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/20 rounded-xl">
+                  <div className="transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/20 rounded-4xl">
                     <MenuCard menu={menu} />
                   </div>
                 </div>
