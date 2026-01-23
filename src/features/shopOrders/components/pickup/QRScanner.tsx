@@ -26,6 +26,7 @@ export default function QRScanner({ onScan, onError, paused = false }: QRScanner
                         height: '100%',
                     }
                 }}
+                sound={false}
             />
             {paused && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-white z-10">
