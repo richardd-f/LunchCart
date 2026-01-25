@@ -32,21 +32,37 @@ export default async function Home({ searchParams }: HomeProps) {
 
   return (
     <main className="min-h-screen bg-white pb-10">
-      {/* Header / Hero Section (Simple) */}
-      <div className="bg-gradient-to-b from-[#F97352]/10 to-white pt-8 pb-4 px-4 rounded-b-[2rem]">
-        <div className="max-w-4xl mx-auto text-center mb-6">
-          <h1 className="text-2xl font-bold text-[#F97352] mb-2">
-            LunchCart
-          </h1>
-          <p className="text-gray-500 text-sm">
-            Pesan makan di kantin jadi lebih mudah.
-          </p>
-        </div>
+      {/* Hero Section */}
+      <section className="relative w-full h-[400px] rounded-b-[3rem] overflow-hidden mb-8">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ 
+            backgroundImage: "url('/header.webp')",
+          }}
+        />
         
-        <Suspense fallback={<div className="w-full max-w-md mx-auto mb-6 h-12 bg-gray-100 rounded-full animate-pulse" />}>
-          <SearchBar />
-        </Suspense>
-      </div>
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/60" />
+
+        {/* Content Container */}
+        <div className="relative h-full flex flex-col justify-center items-center px-4 text-center z-10">
+          <div className="max-w-4xl space-y-4 mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-md">
+              Reimagining School Lunch
+            </h1>
+            <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto drop-shadow-sm">
+              LunchCart, making your break time actually yours.
+            </p>
+          </div>
+          
+          <Suspense fallback={<div className="w-full max-w-md h-12 bg-white/20 rounded-full animate-pulse backdrop-blur-md shadow-lg" />}>
+            <div className="w-full max-w-lg">
+              <SearchBar />
+            </div>
+          </Suspense>
+        </div>
+      </section>
 
       <div className="max-w-6xl mx-auto mt-4 space-y-2">
         {searchQuery && (
