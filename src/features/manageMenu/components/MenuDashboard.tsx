@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Meal, MealOptionGroup, MealOptionValue, MealImage } from '@prisma/client';
+import { useState, useEffect, useMemo } from 'react';
+import { MealCategory } from '@prisma/client';
 import { getMeals, MealWithRelations } from '../action';
 import MenuCard from './MenuCard';
 import MenuFormModal from './MenuFormModal';
-import { OptionGroupInput } from '../action'; // Helper type if needed, but we use the Prisma types mostly here
 
 interface MenuDashboardProps {
   initialMeals: MealWithRelations[];
@@ -14,6 +13,7 @@ interface MenuDashboardProps {
 export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
   const [meals, setMeals] = useState<MealWithRelations[]>(initialMeals);
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<MealCategory | 'ALL'>('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<MealWithRelations | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
@@ -62,6 +62,15 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
       ));
   };
 
+  // Category filter tabs
+  const categories: (MealCategory | 'ALL')[] = ['ALL', 'MEAL', 'SNACK', 'DRINK', 'DESSERT', 'TOOL', 'SAUCE'];
+
+  // Filter meals based on selected category
+  const filteredMeals = useMemo(() => {
+    if (selectedCategory === 'ALL') return meals;
+    return meals.filter(meal => meal.category === selectedCategory);
+  }, [meals, selectedCategory]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
@@ -90,6 +99,24 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
         </button>
       </div>
 
+      {/* Category Filter Tabs */}
+      <div className="flex overflow-x-auto pb-2 gap-2 hide-scrollbar">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`
+              px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+              ${selectedCategory === cat 
+                  ? 'bg-orange-600 text-white' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+            `}
+          >
+            {cat === 'ALL' ? 'All Items' : cat.charAt(0) + cat.slice(1).toLowerCase()}
+          </button>
+        ))}
+      </div>
+
       {isLoading && meals.length === 0 ? (
          <div className="text-center py-12">
             <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 border-orange-500 rounded-full" role="status"></div>
@@ -111,7 +138,7 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {meals.map((meal) => (
+          {filteredMeals.map((meal) => (
             <div key={meal.id} className="h-full">
                 <MenuCard 
                     meal={meal} 
