@@ -17,7 +17,7 @@ export function MenuCard({ name, price, imageUrl }: MenuCardProps) {
   }).format(Number(price));
 
   return (
-    <div className="flex-shrink-0 w-40 sm:w-48 md:w-60 lg:w-72 bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden snap-start hover:shadow-lg transition-shadow duration-300">
+    <div className="flex-shrink-0 w-full bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden snap-start hover:shadow-lg transition-shadow duration-300">
       <div className="relative h-32 md:h-40 lg:h-48 w-full bg-gray-100">
         {imageUrl ? (
           <Image
