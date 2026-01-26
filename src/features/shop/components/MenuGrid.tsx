@@ -20,7 +20,7 @@ export function MenuGrid({ menus }: MenuGridProps) {
 
   // Categories available in the data (plus hardcoded standard ones if you prefer, or dynamic)
   // Let's use standard enum values
-  const categories: (MealCategory | 'ALL')[] = ['ALL', 'MEAL', 'SNACK', 'DRINK', 'DESSERT'];
+  const categories: (MealCategory | 'ALL')[] = ['ALL', 'MEAL', 'SNACK', 'DRINK', 'DESSERT', 'TOOL', 'SAUCE'];
 
   return (
     <section>

@@ -11,7 +11,7 @@ interface MenuFormModalProps {
   onSuccess: () => void;
 }
 
-const CATEGORIES: MealCategory[] = ['MEAL', 'SNACK', 'DRINK', 'DESSERT'];
+const CATEGORIES: MealCategory[] = ['MEAL', 'SNACK', 'DRINK', 'DESSERT', 'TOOL', 'SAUCE'];
 
 export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess }: MenuFormModalProps) {
   const [name, setName] = useState('');
