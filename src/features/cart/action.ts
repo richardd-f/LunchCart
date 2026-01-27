@@ -186,16 +186,44 @@ export async function createOrder(
         };
     }[] = [];
 
+    // Build Midtrans item_details array
+    const midtransItems: {
+        id: string;
+        name: string;
+        price: number;
+        quantity: number;
+    }[] = [];
+
     for (const item of cartItems) {
-        let itemTotal = Number(item.meal.price);
+        const basePrice = Number(item.meal.price);
+        let itemTotal = basePrice;
         const itemOptions: { optionName: string; price: any }[] = [];
 
+        // Add base meal to Midtrans items
+        midtransItems.push({
+            id: item.mealId,
+            name: item.meal.name.substring(0, 50), // Midtrans limits name to 50 chars
+            price: basePrice,
+            quantity: item.quantity,
+        });
+
         for (const opt of item.options) {
-            itemTotal += Number(opt.mealOptionValue.price);
+            const optionPrice = Number(opt.mealOptionValue.price);
+            itemTotal += optionPrice;
             itemOptions.push({
                 optionName: opt.mealOptionValue.name,
                 price: opt.mealOptionValue.price,
             });
+
+            // Add option as separate line item to Midtrans (only if price > 0)
+            if (optionPrice > 0) {
+                midtransItems.push({
+                    id: `${item.mealId}-opt-${opt.mealOptionValue.id}`,
+                    name: `+ ${opt.mealOptionValue.name}`.substring(0, 50),
+                    price: optionPrice,
+                    quantity: item.quantity,
+                });
+            }
         }
 
         calculatedTotal += itemTotal * item.quantity;
@@ -225,6 +253,7 @@ export async function createOrder(
             order_id: orderId,
             gross_amount: calculatedTotal,
         },
+        item_details: midtransItems,
         credit_card: {
             secure: true,
         },
