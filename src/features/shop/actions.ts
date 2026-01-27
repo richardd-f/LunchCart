@@ -59,7 +59,10 @@ export async function getShopMenus(
           orderBy: { isPrimary: 'desc' }
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { orderNumber: 'asc' },
+        { createdAt: 'asc' }
+      ],
     });
 
     // Convert Decimal to number for serialization

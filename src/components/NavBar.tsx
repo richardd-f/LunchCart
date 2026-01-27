@@ -195,21 +195,21 @@ export function NavBar() {
                 }`}
               >
                 <Link 
-                  href="/shopOrders" 
+                  href="/dashboard/shop/shopOrders" 
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Shop Orders
                 </Link>
                 <Link 
-                  href="/manageMenu" 
+                  href="/dashboard/shop/manageMenu" 
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Manage Menu
                 </Link>
                 <Link 
-                  href="/shopWallet" 
+                  href="/dashboard/shop/shopWallet" 
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -242,14 +242,14 @@ export function NavBar() {
                 }`}
               >
                 <Link 
-                  href="/admin/withdraw" 
+                  href="/dashboard/admin/withdraw" 
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Money Withdrawal
                 </Link>
                 <Link 
-                  href="/admin/manageAdmin" 
+                  href="/dashboard/admin/manageAdmin" 
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >

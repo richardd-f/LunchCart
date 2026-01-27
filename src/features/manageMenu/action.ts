@@ -40,6 +40,7 @@ export interface SerializableMeal {
   price: number; // Changed from Decimal
   category: MealCategory;
   isAvailable: boolean;
+  orderNumber: number;
   allowNotes: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -131,10 +132,13 @@ export async function getMeals(
           include: {
             values: { orderBy: { price: 'asc' } }
           }, 
-          orderBy: { createdAt: 'asc' } // Or add an order field to group later if needed
+          orderBy: { createdAt: 'asc' }
         }
       },
-      orderBy: { updatedAt: 'desc' }
+      orderBy: [
+        { orderNumber: 'asc' },
+        { createdAt: 'asc' }
+      ]
     });
 
     // Serialize Decimals to numbers
@@ -424,4 +428,46 @@ export async function toggleMealAvailability(id: string): Promise<ActionResult<S
     console.error('Error toggling meal:', error);
     return { success: false, error: 'Failed to toggle availability' };
   } 
+}
+
+export async function updateMealOrder(
+  mealOrders: { id: string; orderNumber: number }[]
+): Promise<ActionResult<void>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+
+    const shopId = await getOwnerShopId(session.user.id);
+    if (!shopId) return { success: false, error: 'Shop not found' };
+
+    // Verify all meals belong to the shop
+    const mealIds = mealOrders.map(m => m.id);
+    const meals = await prisma.meal.findMany({
+      where: { id: { in: mealIds }, shopId },
+      select: { id: true }
+    });
+
+    if (meals.length !== mealIds.length) {
+      return { success: false, error: 'Some meals not found or unauthorized' };
+    }
+
+    // Update all meal orders in a transaction
+    await prisma.$transaction(
+      mealOrders.map(({ id, orderNumber }) =>
+        prisma.meal.update({
+          where: { id },
+          data: { orderNumber }
+        })
+      )
+    );
+
+    revalidatePath('/manageMenu');
+    revalidatePath('/shop');
+    revalidatePath('/');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating meal order:', error);
+    return { success: false, error: 'Failed to update meal order' };
+  }
 }

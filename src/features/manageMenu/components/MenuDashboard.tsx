@@ -2,9 +2,25 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { MealCategory } from '@prisma/client';
-import { getMeals, MealWithRelations } from '../action';
+import { getMeals, MealWithRelations, updateMealOrder } from '../action';
 import MenuCard from './MenuCard';
 import MenuFormModal from './MenuFormModal';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import toast from 'react-hot-toast';
 
 interface MenuDashboardProps {
   initialMeals: MealWithRelations[];
@@ -17,6 +33,7 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState<MealWithRelations | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -67,9 +84,85 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
 
   // Filter meals based on selected category
   const filteredMeals = useMemo(() => {
-    if (selectedCategory === 'ALL') return meals;
-    return meals.filter(meal => meal.category === selectedCategory);
+    let result = meals;
+    if (selectedCategory !== 'ALL') {
+      result = meals.filter(meal => meal.category === selectedCategory);
+    }
+    // Sort by orderNumber to maintain visual order
+    return [...result].sort((a, b) => (a.orderNumber ?? 0) - (b.orderNumber ?? 0));
   }, [meals, selectedCategory]);
+
+  // Use the filtered meals IDs for SortableContext
+  const items = useMemo(() => filteredMeals.map(m => m.id), [filteredMeals]);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = filteredMeals.findIndex((meal) => meal.id === active.id);
+    const newIndex = filteredMeals.findIndex((meal) => meal.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reorder the filtered meals array
+    const reorderedFiltered = arrayMove(filteredMeals, oldIndex, newIndex);
+    
+    // Update orderNumber for the reordered meals
+    const updatedFilteredMeals = reorderedFiltered.map((meal, index) => ({
+      ...meal,
+      orderNumber: index
+    }));
+
+    // Create a map for quick lookup
+    const filteredMealsMap = new Map(updatedFilteredMeals.map(meal => [meal.id, meal]));
+
+    // Update the full meals array - replace filtered items with updated versions
+    const updatedMeals = meals.map(meal => {
+      if (filteredMealsMap.has(meal.id)) {
+        return filteredMealsMap.get(meal.id)!;
+      }
+      return meal;
+    });
+
+    // Force immediate UI update
+    setMeals(updatedMeals);
+
+    // Save to server
+    setIsSavingOrder(true);
+    try {
+      const mealOrders = updatedFilteredMeals.map((meal) => ({
+        id: meal.id,
+        orderNumber: meal.orderNumber,
+      }));
+
+      const result = await updateMealOrder(mealOrders);
+      
+      if (!result.success) {
+        toast.error(result.error || 'Failed to update order');
+        // Revert on error
+        fetchMeals(search);
+      } else {
+        toast.success('Menu order updated');
+      }
+    } catch (error) {
+      console.error('Error updating meal order:', error);
+      toast.error('Failed to update order');
+      fetchMeals(search);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -117,6 +210,17 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
         ))}
       </div>
 
+      {/* Saving indicator */}
+      {isSavingOrder && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+          <svg className="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span className="text-sm text-blue-700 font-medium">Saving order...</span>
+        </div>
+      )}
+
       {isLoading && meals.length === 0 ? (
          <div className="text-center py-12">
             <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 border-orange-500 rounded-full" role="status"></div>
@@ -137,23 +241,30 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredMeals.map((meal) => (
-            <div key={meal.id} className="h-full">
-                <MenuCard 
-                    meal={meal} 
-                    onEdit={handleEdit}
-                    onDelete={handleCardDelete}
-                    onToggle={handleCardToggle}
-                />
-             </div>
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={items}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredMeals.map((meal) => (
+                <div key={meal.id} className="h-full">
+                    <MenuCard 
+                        meal={meal} 
+                        onEdit={handleEdit}
+                        onDelete={handleCardDelete}
+                        onToggle={handleCardToggle}
+                    />
+                 </div>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
-
-      {/* Since I noticed MenuCard doesn't have a callback for delete success, I'll update MenuCard Props in the next step or now if I can.
-          For now, I'll assume I update MenuCard.tsx to accept `onDeleteSuccess`.
-      */}
       
       <MenuFormModal
         isOpen={isModalOpen}

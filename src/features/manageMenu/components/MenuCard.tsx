@@ -2,6 +2,8 @@ import { Meal, MealCategory, MealImage, MealOptionGroup, MealOptionValue } from 
 import { deleteMeal, toggleMealAvailability, MealWithRelations } from '../action';
 import { useState } from 'react';
 import { showConfirmationToast } from '@/components/ConfirmationToast';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface MenuCardProps {
     meal: MealWithRelations;
@@ -13,6 +15,21 @@ interface MenuCardProps {
 export default function MenuCard({ meal, onEdit, onDelete, onToggle }: MenuCardProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isToggling, setIsToggling] = useState(false);
+
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: meal.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
 
     const handleDelete = async () => {
         showConfirmationToast(
@@ -38,7 +55,11 @@ export default function MenuCard({ meal, onEdit, onDelete, onToggle }: MenuCardP
     const primaryImage = meal.images.find(img => img.isPrimary) || meal.images[0];
 
     return (
-        <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100 flex flex-col h-full animate-in fade-in zoom-in duration-300">
+        <div 
+            ref={setNodeRef}
+            style={style}
+            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden border border-gray-100 flex flex-col h-full animate-in fade-in zoom-in duration-300"
+        >
             <div className="relative h-48 bg-gray-200">
                 {primaryImage ? (
                     <img 
@@ -63,6 +84,18 @@ export default function MenuCard({ meal, onEdit, onDelete, onToggle }: MenuCardP
                         {meal.category}
                      </span>
                 </div>
+                
+                {/* Drag Handle */}
+                <button
+                    {...attributes}
+                    {...listeners}
+                    className="absolute bottom-2 right-2 bg-white/90 hover:bg-white p-2 rounded-lg shadow-md cursor-grab active:cursor-grabbing transition-colors group"
+                    title="Drag to reorder"
+                >
+                    <svg className="w-5 h-5 text-gray-600 group-hover:text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16" />
+                    </svg>
+                </button>
             </div>
 
             <div className="p-4 flex flex-col flex-grow">
