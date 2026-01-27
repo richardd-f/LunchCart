@@ -70,6 +70,20 @@ export async function updatePaymentStatus(
         dataToUpdate.paymentTime = new Date()
     }
 
+    // Auto-cancel order if payment failed, expired, or cancelled
+    // Only cancel if order is not already in a terminal state
+    const paymentFailureStatuses: PaymentStatus[] = [
+        PaymentStatus.FAILED, 
+        PaymentStatus.EXPIRED, 
+        PaymentStatus.CANCELLED
+    ]
+    const orderTerminalStatuses: OrderStatus[] = [OrderStatus.COMPLETED, OrderStatus.CANCELLED]
+    
+    if (paymentFailureStatuses.includes(newPaymentStatus) && !orderTerminalStatuses.includes(order.orderStatus)) {
+        console.log(`Auto-cancelling order ${order.id} due to payment status: ${newPaymentStatus}`)
+        dataToUpdate.orderStatus = OrderStatus.CANCELLED
+    }
+
     try {
         const updatedOrder = await prisma.order.update({
             where: { id: order.id },

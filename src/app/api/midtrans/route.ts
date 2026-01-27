@@ -6,7 +6,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     
     // Log the received notification for debugging
-    console.log("Midtrans Notification Received:", body);
+    console.log("[Midtrans Webhook] Notification Received:", {
+      order_id: body.order_id,
+      transaction_status: body.transaction_status,
+      fraud_status: body.fraud_status,
+      transaction_id: body.transaction_id,
+    });
 
     const {
       order_id,
@@ -16,13 +21,10 @@ export async function POST(req: NextRequest) {
     } = body;
 
     if (!order_id) {
+        console.error("[Midtrans Webhook] Missing order_id in notification");
         return NextResponse.json({ message: "Invalid notification: Missing order_id" }, { status: 400 });
     }
-
-    // Call the server action to update the database
-    // Note: We don't await this if we want to return 200 OK fast to Midtrans, 
-    // but Next.js serverless functions might terminate. 
-    // Best practice in Vercel/NextJS is to await it to ensure it completes.
+    
     const result = await updatePaymentStatus(
         order_id,
         transaction_status,
@@ -32,15 +34,11 @@ export async function POST(req: NextRequest) {
     );
 
     if (!result.success) {
-        console.error("Failed to process Midtrans notification:", result.error);
-        // Even if update fails internally (e.g. order not found), strictly speaking we might should return 404,
-        // but Midtrans expects 200 OK to stop retrying. 
-        // If it's a critical error (DB down), 500 will make them retry.
-        // If Order Not Found, retrying won't help, so 200 is acceptable or 404.
-        // Let's return 200 to acknowledge receipt to avoid retry loops for "Order Not Found".
+        console.error("[Midtrans Webhook] Failed to process notification:", result.error);
         return NextResponse.json({ message: "Notification processed with warning", error: result.error }, { status: 200 });
     }
 
+    console.log("[Midtrans Webhook] Successfully processed notification for order:", order_id);
     return NextResponse.json({ message: "OK" }, { status: 200 });
 
   } catch (error) {
