@@ -41,7 +41,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <div className="absolute inset-0 bg-black/60" />
 
         {/* Content Container */}
-        <div className="relative h-full flex flex-col justify-center items-center px-4 text-center z-999">
+        <div className="relative h-full flex flex-col justify-center items-center px-4 text-center z-10">
           <div className="max-w-4xl space-y-4 mb-8">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-md">
               Reimagining School Lunch
