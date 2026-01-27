@@ -69,20 +69,41 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
             {/* Content: Order Items */}
             <div className="p-4 flex-1">
                 <div className="space-y-3">
-                    {order.orderItems.map((item) => (
-                        <div key={item.id} className="flex justify-between items-start gap-4">
-                            <div className="flex items-start gap-2">
-                                <span className="text-sm font-bold text-gray-700 text-[#F97352]">{item.quantity}x</span>
-                                <div className='flex flex-col'>
-                                     <span className="text-sm text-gray-700 font-medium">{item.mealName}</span>
-                                     {item.notes && <span className="text-xs text-gray-400 italic">"{item.notes}"</span>}
+                    {order.orderItems.map((item) => {
+                        // Calculate item total including options
+                        const optionsTotal = item.options?.reduce((sum, opt) => sum + Number(opt.price), 0) || 0;
+                        const itemSubtotal = (Number(item.price) + optionsTotal) * item.quantity;
+                        
+                        return (
+                            <div key={item.id} className="flex justify-between items-start gap-4">
+                                <div className="flex items-start gap-2">
+                                    <span className="text-sm font-bold text-gray-700 text-[#F97352]">{item.quantity}x</span>
+                                    <div className='flex flex-col'>
+                                         <span className="text-sm text-gray-700 font-medium">{item.mealName}</span>
+                                         {/* Display options */}
+                                         {item.options && item.options.length > 0 && (
+                                            <div className="mt-0.5 space-y-0.5">
+                                                {item.options.map((opt, idx) => (
+                                                    <div key={idx} className="flex items-center gap-1 text-xs text-gray-500">
+                                                        <span>+ {opt.optionName}</span>
+                                                        {Number(opt.price) > 0 && (
+                                                            <span className="text-gray-400">
+                                                                (+{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(opt.price))})
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                         )}
+                                         {item.notes && <span className="text-xs text-gray-400 italic">"{item.notes}"</span>}
+                                    </div>
                                 </div>
+                                <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+                                    {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(itemSubtotal)}
+                                </span>
                             </div>
-                            <span className="text-sm text-gray-600 font-medium">
-                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.price) * item.quantity)}
-                            </span>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 

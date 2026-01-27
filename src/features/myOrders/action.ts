@@ -60,6 +60,7 @@ export async function getMyOrders(statusFilter?: string) {
                             },
                         },
                     },
+                    options: true,
                 },
             },
         },
@@ -72,6 +73,10 @@ export async function getMyOrders(statusFilter?: string) {
         orderItems: order.orderItems.map(item => ({
             ...item,
             price: Number(item.price),
+            options: item.options.map(opt => ({
+                ...opt,
+                price: Number(opt.price),
+            })),
         })),
     }))
 }
@@ -89,7 +94,11 @@ export async function createPaymentToken(orderId: string) {
         where: { id: orderId },
         include: {
             user: true,
-            orderItems: true,
+            orderItems: {
+                include: {
+                    options: true,
+                },
+            },
         },
     })
 
@@ -103,23 +112,48 @@ export async function createPaymentToken(orderId: string) {
     }
 
     
+    // Build item_details including options
+    const itemDetails: { id: string; price: number; quantity: number; name: string }[] = [];
+    let itemIndex = 0;
+    
+    for (const item of order.orderItems) {
+        // Add base meal
+        itemDetails.push({
+            id: `ITEM-${itemIndex}`,
+            price: Math.round(Number(item.price)),
+            quantity: item.quantity,
+            name: item.mealName.substring(0, 50),
+        });
+        
+        // Add options as separate line items
+        let optIndex = 0;
+        for (const opt of item.options) {
+            const optPrice = Math.round(Number(opt.price));
+            if (optPrice > 0) {
+                itemDetails.push({
+                    id: `ITEM-${itemIndex}-OPT-${optIndex}`,
+                    price: optPrice,
+                    quantity: item.quantity,
+                    name: `+ ${opt.optionName}`.substring(0, 50),
+                });
+            }
+            optIndex++;
+        }
+        itemIndex++;
+    }
+    
     // Construct transaction details
     const parameter = {
         transaction_details: {
-            order_id: order.id,
-            gross_amount: Number(order.totalAmount),
+            order_id: order.midtransOrderId || order.id,
+            gross_amount: Math.round(Number(order.totalAmount)),
         },
         customer_details: {
             first_name: order.user?.name || "Guest",
             email: order.user?.email || "",
             phone: order.user?.phone || "",
         },
-        item_details: order.orderItems.map((item) => ({
-            id: item.mealId || "ITEM",
-            price: Number(item.price),
-            quantity: item.quantity,
-            name: item.mealName,
-        })),
+        item_details: itemDetails,
     };
 
     try {

@@ -194,21 +194,23 @@ export async function createOrder(
         quantity: number;
     }[] = [];
 
+    let itemIndex = 0;
     for (const item of cartItems) {
-        const basePrice = Number(item.meal.price);
+        const basePrice = Math.round(Number(item.meal.price));
         let itemTotal = basePrice;
         const itemOptions: { optionName: string; price: any }[] = [];
 
-        // Add base meal to Midtrans items
+        // Add base meal to Midtrans items (use short ID to stay under 50 chars)
         midtransItems.push({
-            id: item.mealId,
-            name: item.meal.name.substring(0, 50), // Midtrans limits name to 50 chars
+            id: `ITEM-${itemIndex}`,
+            name: item.meal.name.substring(0, 50),
             price: basePrice,
             quantity: item.quantity,
         });
 
+        let optIndex = 0;
         for (const opt of item.options) {
-            const optionPrice = Number(opt.mealOptionValue.price);
+            const optionPrice = Math.round(Number(opt.mealOptionValue.price));
             itemTotal += optionPrice;
             itemOptions.push({
                 optionName: opt.mealOptionValue.name,
@@ -218,12 +220,13 @@ export async function createOrder(
             // Add option as separate line item to Midtrans (only if price > 0)
             if (optionPrice > 0) {
                 midtransItems.push({
-                    id: `${item.mealId}-opt-${opt.mealOptionValue.id}`,
+                    id: `ITEM-${itemIndex}-OPT-${optIndex}`,
                     name: `+ ${opt.mealOptionValue.name}`.substring(0, 50),
                     price: optionPrice,
                     quantity: item.quantity,
                 });
             }
+            optIndex++;
         }
 
         calculatedTotal += itemTotal * item.quantity;
@@ -238,6 +241,8 @@ export async function createOrder(
                 create: itemOptions,
             },
         });
+        
+        itemIndex++;
     }
 
     const midtrans = new (require('midtrans-client').Snap)({
