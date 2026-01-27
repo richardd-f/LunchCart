@@ -102,20 +102,11 @@ export async function createPaymentToken(orderId: string) {
         throw new Error("Unauthorized access to order")
     }
 
-    // If order already has a valid snap token (simple check, ideally check expiry too but Midtrans tokens last a while), return it.
-    // However, for retry scenarios, we might want to re-generate if it's failed or old.
-    // For now, if it exists, let's try to reuse it, or generate new if specific conditions met.
-    // Simpler approach: Just generate new token if pending to be safe, or return existing if not expired.
-    // Note: Midtrans standard expiry is 1 hour usually. 
-    // Let's allow re-generation to avoid "Token Expired" issues.
     
     // Construct transaction details
     const parameter = {
         transaction_details: {
-            order_id: order.id, // Using existing order ID correctly? Midtrans requires unique order_id or appended. 
-            // If we reuse the same OrderID for a new Snap Token, Midtrans might complain if the previous one is still active or "paid".
-            // Ideally we use the `midtransOrderId` field which currently maps to `order.midtransOrderId`.
-            // Let's use `midtransOrderId` from the order model.
+            order_id: order.id,
             gross_amount: Number(order.totalAmount),
         },
         customer_details: {

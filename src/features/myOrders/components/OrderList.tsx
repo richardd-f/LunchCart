@@ -28,15 +28,15 @@ export default function OrderList() {
         : 'https://app.sandbox.midtrans.com/snap/snap.js'
     const MIDTRANS_CLIENT_KEY = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
     
-    // Debug logging
-    useEffect(() => {
-        console.log('[OrderList] Midtrans Configuration:', {
-            snapUrl: MIDTRANS_SNAP_URL,
-            clientKey: MIDTRANS_CLIENT_KEY ? '***' + MIDTRANS_CLIENT_KEY.slice(-4) : 'MISSING',
-            isProduction: process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION,
-            snapScriptLoaded
-        })
-    }, [snapScriptLoaded, MIDTRANS_SNAP_URL, MIDTRANS_CLIENT_KEY]) 
+    // Debug logging - commented out to prevent data exposure
+    // useEffect(() => {
+    //     console.log('[OrderList] Midtrans Configuration:', {
+    //         snapUrl: MIDTRANS_SNAP_URL,
+    //         clientKey: MIDTRANS_CLIENT_KEY ? '***' + MIDTRANS_CLIENT_KEY.slice(-4) : 'MISSING',
+    //         isProduction: process.env.NEXT_PUBLIC_MIDTRANS_IS_PRODUCTION,
+    //         snapScriptLoaded
+    //     })
+    // }, [snapScriptLoaded, MIDTRANS_SNAP_URL, MIDTRANS_CLIENT_KEY]) 
     
     // Fetch orders when filter changes
     const fetchOrders = useCallback(() => {
@@ -55,7 +55,7 @@ export default function OrderList() {
     }, [fetchOrders])
 
     const handlePay = async (orderId: string) => {
-        console.log('[OrderList] handlePay called:', { orderId, snapScriptLoaded, hasWindowSnap: !!window.snap })
+        // console.log('[OrderList] handlePay called:', { orderId, snapScriptLoaded, hasWindowSnap: !!window.snap })
         
         if (!snapScriptLoaded) {
             console.error('[OrderList] Payment blocked: Snap script not loaded')
@@ -70,20 +70,20 @@ export default function OrderList() {
         }
 
         try {
-            console.log('[OrderList] Creating payment token for order:', orderId)
+            // console.log('[OrderList] Creating payment token for order:', orderId)
             const token = await createPaymentToken(orderId)
-            console.log('[OrderList] Payment token received:', token ? '***' + token.slice(-4) : 'null')
+            // console.log('[OrderList] Payment token received:', token ? '***' + token.slice(-4) : 'null')
             
             if (window.snap) {
                 window.snap.pay(token, {
                     onSuccess: function(result: any) {
-                        console.log('[OrderList] Payment success:', result)
+                        // console.log('[OrderList] Payment success:', result)
                         // Refresh orders to show updated status
                         fetchOrders()
                         toast.success("Payment successful!")
                     },
                     onPending: function(result: any) {
-                        console.log('[OrderList] Payment pending:', result)
+                        // console.log('[OrderList] Payment pending:', result)
                         fetchOrders()
                         toast("Payment pending...")
                     },
@@ -92,7 +92,7 @@ export default function OrderList() {
                         toast.error("Payment failed")
                     },
                     onClose: function() {
-                        console.log('[OrderList] Payment popup closed')
+                        // console.log('[OrderList] Payment popup closed')
                         // Maybe user closed without paying
                     }
                 })
@@ -123,7 +123,7 @@ export default function OrderList() {
                 src={MIDTRANS_SNAP_URL} 
                 data-client-key={MIDTRANS_CLIENT_KEY}
                 onLoad={() => {
-                    console.log('[OrderList] Midtrans Snap script loaded successfully')
+                    // console.log('[OrderList] Midtrans Snap script loaded successfully')
                     setSnapScriptLoaded(true)
                 }}
                 onError={(e) => {
@@ -131,7 +131,7 @@ export default function OrderList() {
                     toast.error("Failed to load payment system. Please refresh the page.")
                 }}
                 onReady={() => {
-                    console.log('[OrderList] Midtrans Snap script ready, window.snap available:', !!window.snap)
+                    // console.log('[OrderList] Midtrans Snap script ready, window.snap available:', !!window.snap)
                 }}
             />
 
