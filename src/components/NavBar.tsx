@@ -48,17 +48,17 @@ export function NavBar() {
 
               {navInfo.hasShopRole && (
                 <NavDropdown label={'Shop'} items={[
-                    {label: "Shop Orders",href: '/shopOrders'},
-                    {label: "Manage Menu",href: '/manageMenu'},
-                    {label: "Shop Wallet",href: '/shopWallet'},
+                    {label: "Shop Orders",href: '/dashboard/shop/shopOrders'},
+                    {label: "Manage Menu",href: '/dashboard/shop/manageMenu'},
+                    {label: "Shop Wallet",href: '/dashboard/shop/shopWallet'},
                   ]}
                 />
               )}
 
               {session?.user?.role === 'ADMIN' && (
                 <NavDropdown label={'Admin'} items={[
-                    {label: "Money Withdrawal", href: '/admin/withdraw'},
-                    {label: "Admin Management", href: '/admin/manageAdmin'},
+                    {label: "Money Withdrawal", href: '/dashboard/admin/withdraw'},
+                    {label: "Admin Management", href: '/dashboard/admin/manageAdmin'},
                   ]}
                 />
               )}

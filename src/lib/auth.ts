@@ -38,6 +38,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (user.email && ADMIN_EMAILS.includes(user.email)) {
              token.role = "ADMIN";
         }
+
+        // Check if user has a shop role (OWNER or STAFF)
+        const shopRole = await prisma.userShopRole.findFirst({
+          where: { userId: user.id },
+        });
+        token.hasShopRole = !!shopRole;
       }
       return token;
     },
@@ -45,6 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token && session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.hasShopRole = token.hasShopRole as boolean ?? false;
       }
       return session;
     },

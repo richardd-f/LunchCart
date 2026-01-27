@@ -7,12 +7,7 @@ export default async function ManageMenuPage() {
   const { data: meals, error } = await getMeals();
 
   if (error) {
-    return (
-      <div className="p-8 text-center text-red-600">
-        <h2 className="text-2xl font-bold mb-2">Error</h2>
-        <p>{error}</p>
-      </div>
-    );
+    throw new Error(error);
   }
 
   return (

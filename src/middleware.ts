@@ -10,13 +10,21 @@ export default auth((req) => {
   const userRole = req.auth?.user?.role;
 
   // Protect /admin, /withdraw, and /manageAdmin routes - ADMIN only
-  if (nextUrl.pathname.startsWith("/admin") ) {
+  if (nextUrl.pathname.startsWith("/dashboard/admin") ) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL("/auth/signin", nextUrl));
     }
 
     if (userRole !== "ADMIN") {
       return NextResponse.redirect(new URL("/", nextUrl));
+    }
+  }
+
+  /////// LOGIN REQUIRED /////////
+  
+  if (nextUrl.pathname.startsWith("/dashboard/shop")) {
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL("/auth/signin", nextUrl));
     }
   }
 
@@ -45,17 +53,12 @@ export default auth((req) => {
     }
   }
 
-  // Protect /manageMenu - logged in users only (role check done in page/action)
-  if (nextUrl.pathname.startsWith("/manageMenu")) {
-    if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/auth/signin", nextUrl));
-    }
-  }
+  
 
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/withdraw/:path*", "/manageAdmin/:path*", "/settings/:path*", "/myOrders/:path*", "/cart/:path*", "/manageMenu/:path*"],
+  matcher: ["/admin/:path*", "/withdraw/:path*", "/manageAdmin/:path*", "/settings/:path*", "/myOrders/:path*", "/cart/:path*", "/manageMenu/:path*", "/dashboard/:path*"],
 };
 
