@@ -43,6 +43,13 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
         })
     }
 
+    const handleClearSelection = (groupId: string) => {
+        setSelectedOptions(prev => {
+            const { [groupId]: _, ...rest } = prev
+            return rest
+        })
+    }
+
     const calculateTotal = () => {
         let total = Number(meal.price)
         
@@ -118,19 +125,33 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                     </div>
 
                     {/* Options */}
-                    {meal.optionGroups.map(group => (
-                        <div key={group.id} className="space-y-3">
-                            <div className="flex justify-between">
-                                <h4 className="font-medium text-gray-700 text-sm">
-                                    {group.name} 
-                                    {group.isRequired && <span className="text-red-500 ml-1">*</span>}
-                                </h4>
-                                <span className="text-xs text-gray-400">
-                                    {group.isMultiple ? 'Choose multiple' : 'Choose 1'}
-                                </span>
-                            </div>
+                    {meal.optionGroups.map(group => {
+                        const hasSelection = selectedOptions[group.id]?.length > 0
+                        const showClearButton = !group.isRequired && !group.isMultiple && hasSelection
+                        
+                        return (
+                            <div key={group.id} className="space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="font-medium text-gray-700 text-sm">
+                                        {group.name} 
+                                        {group.isRequired && <span className="text-red-500 ml-1">*</span>}
+                                    </h4>
+                                    <div className="flex items-center gap-2">
+                                        {/* <span className="text-xs text-gray-400">
+                                            {group.isMultiple ? 'Choose multiple' : 'Choose 1'}
+                                        </span> */}
+                                        {showClearButton && (
+                                            <button
+                                                onClick={() => handleClearSelection(group.id)}
+                                                className="text-xs text-[#F97352] hover:text-[#e06241] font-medium transition-colors"
+                                            >
+                                                Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             
-                            <div className="space-y-2">
+                                <div className="space-y-2">
                                 {group.values.map(val => {
                                     const isSelected = selectedOptions[group.id]?.includes(val.id)
                                     return (
@@ -161,7 +182,8 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                                 })}
                             </div>
                         </div>
-                    ))}
+                        )
+                    })}
 
                     {/* Notes - only show if meal allows notes */}
                     {meal.allowNotes && (
