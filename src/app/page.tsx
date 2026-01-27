@@ -1,6 +1,7 @@
 import { getHomepageData } from '@/features/homepage/actions';
 import { SearchBar } from '@/features/homepage/components/SearchBar';
 import { ShopSection } from '@/features/homepage/components/ShopSection';
+import Image from 'next/image';
 import React, { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic'; // Ensure we get fresh data since it might change often
@@ -26,18 +27,21 @@ export default async function Home({ searchParams }: HomeProps) {
       {/* Hero Section */}
       <section className="relative w-full h-[400px] rounded-b-[3rem] overflow-hidden mb-8">
         {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ 
-            backgroundImage: "url('/header.webp')",
-          }}
-        />
+        <div className="absolute inset-0">
+          <Image
+            src="/header.webp"
+            alt="School Lunch Header"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
         
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/60" />
 
         {/* Content Container */}
-        <div className="relative h-full flex flex-col justify-center items-center px-4 text-center z-10">
+        <div className="relative h-full flex flex-col justify-center items-center px-4 text-center z-999">
           <div className="max-w-4xl space-y-4 mb-8">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-md">
               Reimagining School Lunch

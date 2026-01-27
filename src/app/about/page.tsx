@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 // Icons as components for cleanliness
 const ClockIcon = () => (
@@ -27,12 +28,15 @@ export default function AboutPage() {
       {/* Hero Section */}
       <section className="relative w-full h-[400px] rounded-b-[3rem] overflow-hidden mb-8">
         {/* Background Image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ 
-            backgroundImage: "url('/header.webp')",
-          }}
-        />
+        <div className="absolute inset-0">
+          <Image
+            src="/header.webp"
+            alt="School Lunch Header"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
         
         {/* Overlay */}
         <div className="absolute inset-0 bg-black/60" />
