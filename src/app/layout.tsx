@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   // 4. Base URL helps Google resolve relative links
   metadataBase: new URL(BASE_URL),
   
-  keywords: ["Kantin Sanjose", "SMA Santo Yoseph Denpasar", "Pesan Makanan", "Kantin Sekolah", "Denpasar"],
-  authors: [{ name: "Tim IT Sanjose" }],
+  keywords: ["Kantin Sanjose", "SMA Santo Yoseph Denpasar", "Pesan Makanan", "Kantin Sekolah", "Denpasar", "LunchCart"],
+  authors: [{ name: "Felitech" }],
   
   // 5. Open Graph (How it looks on WhatsApp/Facebook)
   openGraph: {
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.jpg", // You need to add this image to your public folder
+        url: "/og-image.jpeg", // You need to add this image to your public folder
         width: 1200,
         height: 630,
         alt: "Kantin Sanjose Preview",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Kantin Sanjose",
     description: "Pesan makanan online di SMA Santo Yoseph Denpasar.",
-    images: ["/og-image.jpg"],
+    images: ["/og-image.jpeg"],
   },
 
   // 7. Robots (Instructions for Google Bot)
