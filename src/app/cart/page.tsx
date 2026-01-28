@@ -61,13 +61,20 @@ export default function CartPage() {
     setPickupTime(''); // Reset time when changing shop
   };
 
-  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    
+  const executeQuantityUpdate = async (itemId: string, newQuantity: number) => {
     // Optimistic update
-    const updatedItems = cartItems.map(item => 
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-    );
+    let updatedItems: CartItemWithDetails[];
+    
+    if (newQuantity < 1) {
+      // Remove item from cart
+      updatedItems = cartItems.filter(item => item.id !== itemId);
+    } else {
+      // Update quantity
+      updatedItems = cartItems.map(item => 
+          item.id === itemId ? { ...item, quantity: newQuantity } : item
+      );
+    }
+    
     setCartItems(updatedItems);
     
     // Update grouped items as well
@@ -80,26 +87,64 @@ export default function CartPage() {
         grouped[shopId].push(item);
     });
     setGroupedItems(grouped);
+    
+    // If no more items in selected shop, deselect it
+    if (selectedShopId && (!grouped[selectedShopId] || grouped[selectedShopId].length === 0)) {
+        setSelectedShopId(null);
+    }
 
     try {
         await updateCartItemQuantity(itemId, newQuantity);
-        // creating a real sync if needed or just trust optimistic
     } catch (error) {
         toast.error('Failed to update quantity');
-        // Revert on error would be ideal but for simplicity just fetch again
+        // Revert on error
         const items = await getCartItems();
         setCartItems(items);
-        // ... reconstruct groups ...
-             const groupedRevert: Record<string, CartItemWithDetails[]> = {};
-            items.forEach((item) => {
-            const shopId = item.meal.shopId;
-            if (!groupedRevert[shopId]) {
-                groupedRevert[shopId] = [];
-            }
-            groupedRevert[shopId].push(item);
-            });
-            setGroupedItems(groupedRevert);
+        const groupedRevert: Record<string, CartItemWithDetails[]> = {};
+        items.forEach((item) => {
+        const shopId = item.meal.shopId;
+        if (!groupedRevert[shopId]) {
+            groupedRevert[shopId] = [];
+        }
+        groupedRevert[shopId].push(item);
+        });
+        setGroupedItems(groupedRevert);
     }
+  };
+
+  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) {
+      // Use toast for confirmation
+      toast((t) => (
+        <div className="flex flex-col gap-2">
+          <span className="font-medium text-gray-800">Remove this item from cart?</span>
+          <div className="flex gap-2 justify-end">
+             <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                // Do nothing
+              }}
+              className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                executeQuantityUpdate(itemId, newQuantity);
+              }}
+              className="px-3 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ), { duration: 4000 });
+      return;
+    }
+    
+    // For non-deletion updates, proceed directly
+    executeQuantityUpdate(itemId, newQuantity);
   };
 
   const calculateTotal = (shopId: string) => {
@@ -296,8 +341,7 @@ export default function CartPage() {
                                     <div className="flex items-center border border-gray-300 rounded-md">
                                         <button 
                                             onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                                            className="px-3 py-1 hover:bg-gray-100 text-gray-600 disabled:opacity-50"
-                                            disabled={item.quantity <= 1}
+                                            className="px-3 py-1 hover:bg-gray-100 text-gray-600"
                                         >
                                             -
                                         </button>

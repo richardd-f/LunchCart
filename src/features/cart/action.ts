@@ -382,11 +382,24 @@ export async function updateCartItemQuantity(cartItemId: string, quantity: numbe
     }
 
     if (quantity < 1) {
-         // Optionally delete, but for now just don't allow < 1 or handle delete in a separate action if needed. 
-         // Assuming UI prevents < 1, but safety check:
-         // If logic requires deletion on 0, w can add it. 
-         // For now, let's enforce min 1.
-         return; 
+         // Delete the cart item when quantity reaches 0
+         const cartItem = await prisma.cartItem.findUnique({
+             where: { id: cartItemId },
+         });
+         
+         if (!cartItem || cartItem.userId !== session.user.id) {
+             throw new Error('Cart item not found or unauthorized');
+         }
+         
+         // Delete cart item options first, then the cart item
+         await prisma.cartItemOption.deleteMany({
+             where: { cartItemId },
+         });
+         await prisma.cartItem.delete({
+             where: { id: cartItemId },
+         });
+         
+         return getCartItems();
     }
 
     // Verify ownership
