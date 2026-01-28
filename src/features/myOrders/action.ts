@@ -111,6 +111,11 @@ export async function createPaymentToken(orderId: string) {
         throw new Error("Unauthorized access to order")
     }
 
+    // If order already has a snapToken, return it instead of creating a new transaction
+    if (order.snapToken && order.snapToken.length > 0) {
+        return order.snapToken;
+    }
+
     
     // Build item_details including options
     const itemDetails: { id: string; price: number; quantity: number; name: string }[] = [];
