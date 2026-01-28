@@ -52,7 +52,7 @@ export function NewMenuSection({ menus }: NewMenuSectionProps) {
 
           {/* Horizontal Scroll Area */}
           <div className="w-full">
-            <div className="flex gap-5 justify-start overflow-x-auto pb-6 px-6 snap-x snap-mandatory hide-scrollbar pt-2 scroll-smooth">
+            <div className="flex gap-5 justify-start overflow-x-auto pb-6 px-6 snap-x snap-mandatory pt-2 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {menus.map((menu) => (
                 <div 
                   key={menu.id} 
