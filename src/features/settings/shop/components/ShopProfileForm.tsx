@@ -16,6 +16,7 @@ interface ShopProfileFormProps {
     description: string;
     fixedTimePickup: boolean;
     orderCutoffMinutes: number;
+    showNewMenuSection: boolean;
     pickupTimes: {
         id: string;
         time: string;
@@ -62,6 +63,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
         ? initialData.pickupTimes.map((pt: any) => pt.time) 
         : ['12:00']
   );
+  const [showNewMenuSection, setShowNewMenuSection] = useState(initialData.showNewMenuSection ?? true);
 
   const addPickupTime = () => {
     setPickupTimes([...pickupTimes, '12:00']);
@@ -308,6 +310,37 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                 Set to 0 to allow orders at any time. Example: 120 = customers must order at least 2 hours before pickup.
               </p>
               <input type="hidden" name="orderCutoffMinutes" value={orderCutoffMinutes.toString()} />
+            </div>
+
+            {/* Show New Menu Section Toggle */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Show "New Menu" Section
+                  </label>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Display the highlighted new menu section at the top of your shop page.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNewMenuSection(!showNewMenuSection)}
+                  className={`${
+                    showNewMenuSection ? 'bg-[#F97352]' : 'bg-gray-200'
+                  } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#F97352] focus:ring-offset-2`}
+                  role="switch"
+                  aria-checked={showNewMenuSection}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`${
+                      showNewMenuSection ? 'translate-x-5' : 'translate-x-0'
+                    } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                  />
+                </button>
+              </div>
+              <input type="hidden" name="showNewMenuSection" value={showNewMenuSection.toString()} />
             </div>
           </div>
 

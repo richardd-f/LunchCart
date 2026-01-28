@@ -34,11 +34,11 @@ export default async function ShopPage({ params }: PageProps) {
         <ShopHeader shop={shop} />
 
         {/* New Menu Section */}
-        {newMenus.length > 0 && (
+        {shop.showNewMenuSection && newMenus.length > 0 && (
            <NewMenuSection menus={newMenus} />
         )}
         
-        {newMenus.length > 0 && <div className="h-px bg-gray-200 my-8" />}
+        {shop.showNewMenuSection && newMenus.length > 0 && <div className="h-px bg-gray-200 my-8" />}
 
         {/* All Menu Grid with Filters */}
         <MenuGrid menus={allMenus} />

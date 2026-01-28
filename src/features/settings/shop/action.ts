@@ -30,6 +30,7 @@ export async function getShopProfile() {
       status: true,
       fixedTimePickup: true,
       orderCutoffMinutes: true,
+      showNewMenuSection: true,
       pickupTimes: true,
     },
   });
@@ -158,6 +159,7 @@ export async function updateShopProfile(
 
   const fixedTimePickup = formData.get('fixedTimePickup') === 'true';
   const orderCutoffMinutes = parseInt(formData.get('orderCutoffMinutes') as string) || 0;
+  const showNewMenuSection = formData.get('showNewMenuSection') === 'true';
   const pickupTimes = formData.getAll('pickupTimes') as string[];
 
   if (!shopId) {
@@ -194,6 +196,7 @@ export async function updateShopProfile(
                 profileImage: profileImage || null,
                 fixedTimePickup,
                 orderCutoffMinutes,
+                showNewMenuSection,
             },
         });
 
