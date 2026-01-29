@@ -16,6 +16,7 @@ interface ShopProfileFormProps {
     description: string;
     fixedTimePickup: boolean;
     orderCutoffMinutes: number;
+    dailyOrderLimit: number;
     showNewMenuSection: boolean;
     pickupTimes: {
         id: string;
@@ -58,6 +59,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
 
   const [isFixedTime, setIsFixedTime] = useState(initialData.fixedTimePickup);
   const [orderCutoffMinutes, setOrderCutoffMinutes] = useState(initialData.orderCutoffMinutes || 0);
+  const [dailyOrderLimit, setDailyOrderLimit] = useState(initialData.dailyOrderLimit || 0);
   const [pickupTimes, setPickupTimes] = useState<string[]>(
     initialData.pickupTimes && initialData.pickupTimes.length > 0 
         ? initialData.pickupTimes.map((pt: any) => pt.time) 
@@ -310,6 +312,28 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                 Set to 0 to allow orders at any time. Example: 120 = customers must order at least 2 hours before pickup.
               </p>
               <input type="hidden" name="orderCutoffMinutes" value={orderCutoffMinutes.toString()} />
+            </div>
+
+            {/* Daily Order Limit */}
+             <div className="mt-6 pt-4 border-t border-gray-200">
+              <label htmlFor="dailyOrderLimit" className="block text-sm font-medium text-gray-700">
+                Daily Order Limit
+              </label>
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  type="number"
+                  id="dailyOrderLimit"
+                  min="0"
+                  value={dailyOrderLimit}
+                  onChange={(e) => setDailyOrderLimit(parseInt(e.target.value) || 0)}
+                  className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                />
+                <span className="text-sm text-gray-500">orders per day</span>
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Set to 0 for unlimited orders.
+              </p>
+              <input type="hidden" name="dailyOrderLimit" value={dailyOrderLimit.toString()} />
             </div>
 
             {/* Show New Menu Section Toggle */}

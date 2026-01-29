@@ -153,11 +153,36 @@ export async function createOrder(
     // Fetch shop to get orderCutoffMinutes
     const shop = await prisma.shop.findUnique({
         where: { id: shopId },
-        select: { orderCutoffMinutes: true, name: true },
+        select: { orderCutoffMinutes: true, dailyOrderLimit: true, name: true },
     });
 
     if (!shop) {
         return { error: 'Shop not found.' };
+    }
+
+    // Validate daily order limit
+    if (shop.dailyOrderLimit > 0) {
+        
+        const startOfDay = new Date(pickupDateTime);
+        startOfDay.setHours(0, 0, 0, 0);
+        
+        const endOfDay = new Date(pickupDateTime);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const orderCount = await prisma.order.count({
+            where: {
+                shopId: shopId,
+                orderStatus: { not: 'CANCELLED' },
+                pickupDate: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            }
+        });
+
+        if (orderCount >= shop.dailyOrderLimit) {
+            return { error: 'We’re fully booked for this date! We’d love to serve you another time—please check our calendar for the next available opening. 😊' };
+        }
     }
 
     // Validate order cutoff time

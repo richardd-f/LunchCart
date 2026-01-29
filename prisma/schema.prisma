@@ -138,6 +138,7 @@ model Shop {
   status             ShopStatus @default(PENDING)
   fixedTimePickup    Boolean    @default(false) @map("fixed_time_pickup")
   orderCutoffMinutes Int        @default(0) @map("order_cutoff_minutes")
+  dailyOrderLimit    Int        @default(0) @map("daily_order_limit")
   showNewMenuSection Boolean    @default(false) @map("show_new_menu_section")
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
