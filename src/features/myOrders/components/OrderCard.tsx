@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import QRCode from "react-qr-code"
+import toast from 'react-hot-toast'
 import { getMyOrders } from '../action'
 
 // Use the actual return type from getMyOrders (with Decimal converted to number)
@@ -20,7 +21,24 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
     const isPending = order.orderStatus === 'PENDING'
     const isPaymentPending = order.paymentStatus === 'PENDING' && isPending
     const showPayButton = isPaymentPending
-    const showQRButton = order.orderStatus === 'READY'
+    const showQRButton = order.orderStatus !== 'COMPLETED' && order.orderStatus !== 'CANCELLED'
+
+    const handleShowQR = () => {
+        if (order.paymentStatus !== 'PAID') {
+            toast.error("Please complete the payment first")
+            return
+        }
+
+        if (order.orderStatus !== 'READY') {
+            toast("Order is not ready. Please wait until the food is READY. You will be notified via WhatsApp.", {
+                icon: '⏳',
+                duration: 4000
+            })
+            return
+        }
+
+        setShowQR(true)
+    }
     
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
@@ -138,7 +156,7 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
 
                     {showQRButton && (
                         <button 
-                             onClick={() => setShowQR(true)}
+                             onClick={handleShowQR}
                              className="px-6 py-2 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-full shadow-md transition-all active:scale-95 flex items-center gap-2"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -147,7 +165,7 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
                                 <path d="M6 10v6H0v-6h6zm-5 1v4h4v-4H1z"/>
                                 <path d="M8 0v16h8V0H8zm7 15H9V1h6v14z"/>
                             </svg>
-                            Show QR
+                            
                         </button>
                     )}
                 </div>
