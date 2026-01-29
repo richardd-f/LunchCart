@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client"
 import { sendWhatsApp } from "@/lib/gowa"
+import { revalidatePath } from "next/cache"
 
 // Types for filter parameters
 export interface ShopOrderFilters {
@@ -381,6 +382,44 @@ Terima kasih telah memesan! 🙏`
     }
 
     return { success: true, orderStatus: newStatus }
+}
+
+export async function getOrderDetails(orderId: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+            orderItems: {
+                include: {
+                    options: true
+                }
+            },
+            user: {
+                select: { name: true }
+            }
+        }
+    })
+
+    if (!order) return { success: false, error: "Order not found" }
+
+    return { success: true, data: order }
+}
+
+export async function completeOrder(orderId: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" }
+
+    await prisma.order.update({
+        where: { id: orderId },
+        data: {
+            orderStatus: OrderStatus.COMPLETED
+        }
+    })
+
+    revalidatePath('/dashboard/shop/shopOrders')
+    return { success: true }
 }
 
 /**
