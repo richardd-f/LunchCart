@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { snap } from "@/lib/midtrans"
 import { OrderStatus } from "@prisma/client"
+import { revalidatePath } from 'next/cache';
 
 export async function getMyOrders(statusFilter?: string) {
     const session = await auth()
@@ -222,4 +223,32 @@ export async function cancelOrder(orderId: string) {
     })
 
     return { success: true }
+}
+
+export async function getUserPhoneStatus() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return null;
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { phone: true, remindPhoneSetup: true }
+    });
+
+    return user;
+}
+
+export async function disablePhoneReminder() {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error('Unauthorized');
+    }
+
+    await prisma.user.update({
+        where: { id: session.user.id },
+        data: { remindPhoneSetup: false }
+    });
+
+    revalidatePath('/myOrders');
 }

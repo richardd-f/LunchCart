@@ -1,7 +1,10 @@
 import React from 'react'
 import OrderList from '@/features/myOrders/components/OrderList'
+import PhoneSetupReminderModal from '@/features/myOrders/components/PhoneSetupReminderModal'
+import { getUserPhoneStatus } from '@/features/myOrders/action'
 
-export default function MyOrdersPage() {
+export default async function MyOrdersPage() {
+  const user = await getUserPhoneStatus()
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="max-w-7xl mx-auto bg-white min-h-screen shadow-lg">
@@ -11,6 +14,10 @@ export default function MyOrdersPage() {
         
         <main className="p-4">
           <OrderList />
+          <PhoneSetupReminderModal 
+            phoneNumber={user?.phone} 
+            remindPhoneSetup={user?.remindPhoneSetup ?? true} 
+          />
         </main>
       </div>
     </div>
