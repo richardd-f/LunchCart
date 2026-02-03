@@ -19,7 +19,13 @@ export async function updatePaymentStatus(
         include: {
             user: { select: { name: true } },
             shop: { select: { id: true, name: true } },
-            orderItems: { select: { mealName: true, quantity: true } },
+            orderItems: { 
+                select: { 
+                    mealName: true, 
+                    quantity: true,
+                    options: { select: { optionName: true } }
+                } 
+            },
         },
     })
 
@@ -108,7 +114,10 @@ export async function updatePaymentStatus(
 
                 // Build order items summary
                 const itemsSummary = order.orderItems
-                    .map(item => `• ${item.quantity}x ${item.mealName}`)
+                    .map(item => {
+                        const options = item.options.map(opt => opt.optionName).join(', ')
+                        return `• ${item.quantity}x ${item.mealName}${options ? ` (${options})` : ''}`
+                    })
                     .join('\n')
 
                 const formattedTotal = new Intl.NumberFormat('id-ID', {
@@ -117,12 +126,17 @@ export async function updatePaymentStatus(
                     maximumFractionDigits: 0,
                 }).format(Number(order.totalAmount))
 
-                const formattedPickup = order.pickupDate 
-                    ? new Date(order.pickupDate).toLocaleString('id-ID', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                    })
-                    : 'Tidak ditentukan'
+                // Prioritize pickupLabel if available
+                const formattedPickup = order.pickupLabel 
+                    ? `${order.pickupLabel}`
+                    : (order.pickupDate 
+                        ? new Date(order.pickupDate).toLocaleString('id-ID', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                        })
+                        : 'Tidak ditentukan')
+
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lunchcart.vercel.app';
 
                 const message = `🛒 *Pesanan Baru - SUDAH DIBAYAR!*
 
@@ -134,7 +148,8 @@ ${itemsSummary}
 
 💰 *Total: ${formattedTotal}*
 
-✅ Pembayaran sudah dikonfirmasi. Segera proses pesanan!`
+✅ Pembayaran sudah dikonfirmasi. Segera proses pesanan!
+🔗 Shop Orders: ${appUrl}/dashboard/shop/shopOrders`
 
                 // Send to all staff with notification enabled (fire and forget)
                 for (const staff of shopStaff) {

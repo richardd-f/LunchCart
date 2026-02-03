@@ -354,12 +354,16 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
     // Send WhatsApp notification when order is READY for pickup
     if (newStatus === OrderStatus.READY && order.user?.phone) {
         try {
-            const formattedPickup = order.pickupDate 
-                ? new Date(order.pickupDate).toLocaleString('id-ID', {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                })
-                : 'sesuai jadwal'
+            const formattedPickup = order.pickupLabel 
+                ? order.pickupLabel
+                : (order.pickupDate 
+                    ? new Date(order.pickupDate).toLocaleString('id-ID', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                    })
+                    : 'sesuai jadwal')
+
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lunchcart.vercel.app';
 
             const message = `*Pesanan Siap!*
 
@@ -371,7 +375,8 @@ Pesanan Anda di *${order.shop?.name || 'toko kami'}* sudah siap untuk diambil! �
 
 Silakan datang ke lokasi pickup sesuai waktu tersebut.
 
-Terima kasih telah memesan! 🙏`
+Terima kasih telah memesan! 🙏
+🔗 Cek Pesanan: ${appUrl}/myOrders`
 
             sendWhatsApp(order.user.phone, message).catch((err) => {
                 console.error('Failed to send pickup notification to customer:', err)
