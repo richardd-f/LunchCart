@@ -1,8 +1,25 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { CreateMealInput, MealImageInput, OptionGroupInput, createMeal, updateMeal, ActionResult, MealWithRelations, SerializableMeal } from '../action';
 import { MealCategory } from '@prisma/client';
 import UploadButton from '@/components/UploadButton';
 import OptionManager from './OptionManager';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableImage } from './SortableImage';
 
 interface MenuFormModalProps {
   isOpen: boolean;
@@ -26,8 +43,23 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Drag and drop state
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -149,36 +181,26 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
     setImages(reorderedImages);
   };
 
-  // Drag and Drop Handlers
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    // Transparent drag image or default
-    // e.dataTransfer.setDragImage(e.currentTarget as Element, 0, 0);
-  };
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault(); // Necessary to allow dropping
-    e.dataTransfer.dropEffect = 'move';
-  };
+    if (over && active.id !== over.id) {
+      setImages((items) => {
+        const oldIndex = items.findIndex((item) => item.imagePath === active.id);
+        const newIndex = items.findIndex((item) => item.imagePath === over.id);
+        
+        if (oldIndex === -1 || newIndex === -1) return items;
 
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === dropIndex) return;
-
-    const newImages = [...images];
-    const [draggedItem] = newImages.splice(draggedIndex, 1);
-    newImages.splice(dropIndex, 0, draggedItem);
-
-    // Re-assign order and isPrimary
-    const updatedImages = newImages.map((img, idx) => ({
-      ...img,
-      order: idx,
-      isPrimary: idx === 0
-    }));
-
-    setImages(updatedImages);
-    setDraggedIndex(null);
+        const newImages = arrayMove(items, oldIndex, newIndex);
+        
+        // Re-assign order and isPrimary based on new positions
+        return newImages.map((img, idx) => ({
+             ...img,
+             order: idx,
+             isPrimary: idx === 0
+        }));
+      });
+    }
   };
 
   return (
@@ -290,36 +312,29 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                    <label className="block text-sm font-medium text-gray-700 mb-2">Images (Drag to reorder)</label>
                    <p className="text-xs text-gray-500 mb-2">First image will be the primary/cover image.</p>
                    
-                   <div className="grid grid-cols-3 gap-2 mb-2">
-                      {images.map((img, idx) => (
-                        <div 
-                            key={idx} // Using index because we don't have IDs for new images yet
-                            className={`relative aspect-square group cursor-move ${draggedIndex === idx ? 'opacity-50' : 'opacity-100'} transition-opacity`}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, idx)}
-                            onDragOver={(e) => handleDragOver(e, idx)}
-                            onDrop={(e) => handleDrop(e, idx)}
-                        >
-                          <img 
-                            src={img.imagePath} 
-                            alt={`Upload ${idx}`} 
-                            className="w-full h-full object-cover rounded-lg border bg-gray-50 select-none" 
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(idx)}
-                            className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition-colors z-10"
-                          >
-                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                               <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                             </svg>
-                          </button>
-                          {/* Visual Indicator for Primary (First Item) */}
-                          {idx === 0 && <span className="absolute bottom-1 left-1 bg-orange-500/90 text-white text-[10px] px-1.5 py-0.5 rounded shadow-sm">Main</span>}
-                          <div className="absolute inset-0 border-2 border-transparent hover:border-orange-300 rounded-lg pointer-events-none transition-colors" />
-                        </div>
-                      ))}
-                   </div>
+                   <DndContext 
+                      sensors={sensors} 
+                      collisionDetection={closestCenter} 
+                      onDragEnd={handleDragEnd}
+                   >
+                     <SortableContext 
+                        items={images.map(img => img.imagePath)} 
+                        strategy={rectSortingStrategy}
+                     >
+                       <div className="grid grid-cols-3 gap-2 mb-2">
+                          {images.map((img, idx) => (
+                             <SortableImage 
+                                key={img.imagePath} 
+                                id={img.imagePath} 
+                                imagePath={img.imagePath} 
+                                index={idx} 
+                                onRemove={removeImage} 
+                                isPrimary={img.isPrimary} 
+                             />
+                          ))}
+                       </div>
+                     </SortableContext>
+                   </DndContext>
                    <UploadButton onConfirmed={handleImageUpload} />
                 </div>
             </div>
