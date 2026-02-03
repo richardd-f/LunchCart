@@ -21,6 +21,7 @@ export default function CartPage() {
   const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
   const [pickupDate, setPickupDate] = useState('');
   const [pickupTime, setPickupTime] = useState('');
+  const [pickupLabel, setPickupLabel] = useState(''); // Added
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -59,6 +60,7 @@ export default function CartPage() {
   const handleShopSelect = (shopId: string) => {
     setSelectedShopId(shopId);
     setPickupTime(''); // Reset time when changing shop
+    setPickupLabel(''); // Reset label when changing shop
   };
 
   const executeQuantityUpdate = async (itemId: string, newQuantity: number) => {
@@ -163,9 +165,23 @@ export default function CartPage() {
       toast.error('Please select a shop to order from');
       return;
     }
-    if (!pickupDate || !pickupTime) {
-      toast.error('Please select pickup date and time');
+    
+    // Get shop details to check pickup mode
+    const shop = groupedItems[selectedShopId][0].meal.shop;
+    
+    if (!pickupDate) {
+         toast.error('Please select pickup date');
+         return;
+    }
+
+    if (shop.isUsingTimePickup && !pickupTime) {
+      toast.error('Please select pickup time');
       return;
+    }
+
+    if (!shop.isUsingTimePickup && !pickupLabel) {
+       toast.error('Please select a pickup time');
+       return;
     }
 
     setIsProcessing(true);
@@ -173,6 +189,7 @@ export default function CartPage() {
     formData.append('shopId', selectedShopId);
     formData.append('pickupDate', pickupDate);
     formData.append('pickupTime', pickupTime);
+    formData.append('pickupLabel', pickupLabel); // Added
     formData.append('totalAmount', calculateTotal(selectedShopId).toString());
 
     try {
@@ -385,25 +402,40 @@ export default function CartPage() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Pickup Time</label>
-                                {shop.fixedTimePickup ? (
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    {shop.isUsingTimePickup ? "Pickup Time" : "Pickup Time"}
+                                </label>
+                                {shop.isUsingTimePickup ? (
+                                    shop.fixedTimePickup ? (
+                                        <select
+                                            value={pickupTime}
+                                            onChange={(e) => setPickupTime(e.target.value)}
+                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                                        >
+                                            <option value="">Select Time</option>
+                                            {shop.pickupTimes?.map((pt: any) => (
+                                                <option key={pt.id || pt.time} value={pt.time}>{pt.time}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input
+                                            type="time"
+                                            value={pickupTime}
+                                            onChange={(e) => setPickupTime(e.target.value)}
+                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                                        />
+                                    )
+                                ) : (
                                     <select
-                                        value={pickupTime}
-                                        onChange={(e) => setPickupTime(e.target.value)}
+                                        value={pickupLabel}
+                                        onChange={(e) => setPickupLabel(e.target.value)}
                                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
                                     >
                                         <option value="">Select Time</option>
-                                        {shop.pickupTimes?.map((pt: any) => (
-                                            <option key={pt.id || pt.time} value={pt.time}>{pt.time}</option>
+                                        {shop.pickupLabels?.map((pl: any) => (
+                                            <option key={pl.id || pl.label} value={pl.label}>{pl.label}</option>
                                         ))}
                                     </select>
-                                ) : (
-                                    <input
-                                        type="time"
-                                        value={pickupTime}
-                                        onChange={(e) => setPickupTime(e.target.value)}
-                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
-                                    />
                                 )}
                             </div>
                         </div>

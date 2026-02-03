@@ -141,15 +141,17 @@ model Shop {
   orderCutoffMinutes Int        @default(0) @map("order_cutoff_minutes")
   dailyOrderLimit    Int        @default(0) @map("daily_order_limit")
   showNewMenuSection Boolean    @default(false) @map("show_new_menu_section")
+  isUsingTimePickup  Boolean    @default(true) @map("is_using_time_pickup")
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  meals       Meal[]
-  userRoles   UserShopRole[]
-  wallet      ShopWallet?
-  orders      Order[]
-  pickupTimes PickupTime[]
+  meals        Meal[]
+  userRoles    UserShopRole[]
+  wallet       ShopWallet?
+  orders       Order[]
+  pickupTimes  PickupTime[]
+  pickupLabels PickupLabel[]
 
   @@map("shops")
 }
@@ -164,6 +166,18 @@ model PickupTime {
   shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@map("pickup_times")
+}
+
+model PickupLabel {
+  id        String   @id @default(cuid())
+  shopId    String   @map("shop_id")
+  label     String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@map("pickup_labels")
 }
 
 model UserShopRole {
@@ -299,11 +313,13 @@ model ShopWallet {
 }
 
 model Order {
-  id                    String        @id @default(cuid())
-  userId                String        @map("user_id")
-  shopId                String        @map("shop_id")
-  orderStatus           OrderStatus   @default(PENDING) @map("order_status")
-  pickupDate            DateTime?     @map("pickup_date")
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  shopId      String      @map("shop_id")
+  orderStatus OrderStatus @default(PENDING) @map("order_status")
+  pickupDate  DateTime?   @map("pickup_date")
+  pickupLabel String?     @map("pickup_label") @db.VarChar(100)
+
   paymentStatus         PaymentStatus @default(PENDING) @map("payment_status")
   midtransOrderId       String        @unique @map("midtrans_order_id") @db.VarChar(50)
   midtransTransactionId String?       @map("midtrans_transaction_id") @db.VarChar(50)

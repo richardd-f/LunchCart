@@ -21,9 +21,13 @@ export type CartItemWithDetails = {
             id: string;
             name: string;
             fixedTimePickup: boolean;
+            isUsingTimePickup: boolean; // Added
             orderCutoffMinutes: number;
             pickupTimes: {
               time: string;
+            }[];
+            pickupLabels: { // Added
+                label: string;
             }[];
         };
         images: {
@@ -55,6 +59,7 @@ export async function getCartItems() {
                     shop: {
                         include: {
                             pickupTimes: true,
+                            pickupLabels: true, // Added
                         }
                     },
                     images: {
@@ -84,8 +89,10 @@ export async function getCartItems() {
                 id: item.meal.shop.id,
                 name: item.meal.shop.name,
                 fixedTimePickup: item.meal.shop.fixedTimePickup,
+                isUsingTimePickup: item.meal.shop.isUsingTimePickup ?? true, // Added default
                 orderCutoffMinutes: item.meal.shop.orderCutoffMinutes,
                 pickupTimes: item.meal.shop.pickupTimes || [],
+                pickupLabels: item.meal.shop.pickupLabels || [], // Added
             }
         },
         options: item.options.map(opt => ({
@@ -116,14 +123,40 @@ export async function createOrder(
     const shopId = formData.get('shopId') as string;
     const pickupDateStr = formData.get('pickupDate') as string; // YYYY-MM-DD
     const pickupTime = formData.get('pickupTime') as string; // HH:MM
+    const pickupLabel = formData.get('pickupLabel') as string; // New
     const totalAmount = Number(formData.get('totalAmount')); // Should be calculated server-side normally, but for now validating slightly.
 
-    if (!shopId || !pickupDateStr || !pickupTime) {
-        return { error: 'Please select a shop and pickup time.' };
+    if (!shopId || !pickupDateStr) {
+        return { error: 'Please select a shop and pickup date.' };
     }
     
-    // Combine date and time
-    const pickupDateTime = new Date(`${pickupDateStr}T${pickupTime}:00`);
+    // Fetch shop to check pickup mode
+    const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        select: { 
+            orderCutoffMinutes: true, 
+            dailyOrderLimit: true, 
+            name: true,
+            isUsingTimePickup: true,
+        },
+    });
+
+    if (!shop) {
+        return { error: 'Shop not found.' };
+    }
+
+    if (shop.isUsingTimePickup && !pickupTime) {
+         return { error: 'Please select a pickup time.' };
+    }
+
+    if (!shop.isUsingTimePickup && !pickupLabel) {
+         return { error: 'Please select a pickup time.' };
+    }
+    
+    // Combine date and time (if using time pickup, otherwise just use noon or default for sorting)
+    const timeString = shop.isUsingTimePickup ? pickupTime : '12:00';
+    const pickupDateTime = new Date(`${pickupDateStr}T${timeString}:00`);
+
     if (isNaN(pickupDateTime.getTime())) {
         return { error: 'Invalid pickup date/time.' };
     }
@@ -150,17 +183,7 @@ export async function createOrder(
         return { error: 'No items in cart for this shop.' };
     }
 
-    // Fetch shop to get orderCutoffMinutes
-    const shop = await prisma.shop.findUnique({
-        where: { id: shopId },
-        select: { orderCutoffMinutes: true, dailyOrderLimit: true, name: true },
-    });
-
-    if (!shop) {
-        return { error: 'Shop not found.' };
-    }
-
-    // Validate daily order limit
+    // Validate daily order limit (Apply for both modes? Yes, usually)
     if (shop.dailyOrderLimit > 0) {
         
         const startOfDay = new Date(pickupDateTime);
@@ -185,8 +208,8 @@ export async function createOrder(
         }
     }
 
-    // Validate order cutoff time
-    if (shop.orderCutoffMinutes > 0) {
+    // Validate order cutoff time (ONLY if using Time Pickup)
+    if (shop.isUsingTimePickup && shop.orderCutoffMinutes > 0) {
         const now = new Date();
         const cutoffDeadline = new Date(pickupDateTime.getTime() - shop.orderCutoffMinutes * 60 * 1000);
         
@@ -307,6 +330,7 @@ export async function createOrder(
                     totalAmount: calculatedTotal,
                     snapToken: '', // Will be updated after Midtrans transaction
                     pickupDate: pickupDateTime,
+                    pickupLabel: pickupLabel || null, // Added
                     orderItems: {
                         create: orderItemsData,
                     },

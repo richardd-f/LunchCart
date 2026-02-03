@@ -32,7 +32,9 @@ export async function getShopProfile() {
       orderCutoffMinutes: true,
       dailyOrderLimit: true,
       showNewMenuSection: true,
+      isUsingTimePickup: true,
       pickupTimes: true,
+      pickupLabels: true,
     },
   });
 
@@ -162,7 +164,9 @@ export async function updateShopProfile(
   const orderCutoffMinutes = parseInt(formData.get('orderCutoffMinutes') as string) || 0;
   const dailyOrderLimit = parseInt(formData.get('dailyOrderLimit') as string) || 0;
   const showNewMenuSection = formData.get('showNewMenuSection') === 'true';
+  const isUsingTimePickup = formData.get('isUsingTimePickup') === 'true';
   const pickupTimes = formData.getAll('pickupTimes') as string[];
+  const pickupLabels = formData.getAll('pickupLabels') as string[];
 
   if (!shopId) {
     return { error: 'Shop ID is missing' };
@@ -200,6 +204,7 @@ export async function updateShopProfile(
                 orderCutoffMinutes,
                 dailyOrderLimit,
                 showNewMenuSection,
+                isUsingTimePickup,
             },
         });
 
@@ -208,13 +213,27 @@ export async function updateShopProfile(
             where: { shopId: shopId },
         });
 
-        if (fixedTimePickup && pickupTimes.length > 0) {
+        if (fixedTimePickup && isUsingTimePickup && pickupTimes.length > 0) {
             await tx.pickupTime.createMany({
                 data: pickupTimes.map(time => ({
                     shopId: shopId,
                     time,
                 }))
             });
+        }
+
+        // Update pickup labels: delete existing and create new ones
+        await tx.pickupLabel.deleteMany({
+             where: { shopId: shopId },
+        });
+
+        if (!isUsingTimePickup && pickupLabels.length > 0) {
+             await tx.pickupLabel.createMany({
+                 data: pickupLabels.map(label => ({
+                     shopId: shopId,
+                     label,
+                 }))
+             });
         }
     });
 
