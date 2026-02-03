@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { AddToCartInput, MealWithDetails, addToCart } from '../action'
 import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify';
 
 interface AddToCartModalProps {
     meal: MealWithDetails

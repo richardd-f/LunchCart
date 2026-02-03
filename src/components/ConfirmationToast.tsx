@@ -1,23 +1,23 @@
 "use client"
 
 import React from 'react'
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify'
 
 interface ConfirmationToastProps {
     message: string
     onConfirm: () => void
     onCancel?: () => void
-    t: any // toast instance
+    closeToast?: () => void // injected by react-toastify
 }
 
-export default function ConfirmationToast({ message, onConfirm, onCancel, t }: ConfirmationToastProps) {
+export default function ConfirmationToast({ message, onConfirm, onCancel, closeToast }: ConfirmationToastProps) {
     const handleConfirm = () => {
-        toast.dismiss(t.id)
+        if (closeToast) closeToast()
         onConfirm()
     }
 
     const handleCancel = () => {
-        toast.dismiss(t.id)
+        if (closeToast) closeToast()
         if (onCancel) onCancel()
     }
 
@@ -54,16 +54,21 @@ export default function ConfirmationToast({ message, onConfirm, onCancel, t }: C
 }
 
 export const showConfirmationToast = (message: string, onConfirm: () => void, onCancel?: () => void) => {
-    toast.custom((t) => (
-        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white shadow-lg rounded-lg pointer-events-auto flex p-4`}>
+    toast(
+        ({ closeToast }) => (
             <ConfirmationToast 
-                t={t} 
+                closeToast={closeToast} 
                 message={message} 
                 onConfirm={onConfirm} 
                 onCancel={onCancel} 
             />
-        </div>
-    ), {
-        duration: Infinity, // Don't auto-close
-    })
+        ), 
+        {
+            autoClose: false,
+            closeOnClick: false,
+            draggable: false,
+            closeButton: false, // We control closing via buttons
+            className: "p-0"
+        }
+    )
 }

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { addShopStaff, toggleStaffNotification, removeShopStaff } from '../action';
 import { UserShopRole, User } from '@prisma/client';
 import { showConfirmationToast } from '@/components/ConfirmationToast';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 type StaffWithUser = UserShopRole & {
   user: Pick<User, 'id' | 'name' | 'email' | 'phone' | 'image'>;

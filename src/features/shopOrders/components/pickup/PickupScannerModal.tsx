@@ -5,7 +5,7 @@ import QRScanner from './QRScanner'
 import { verifyPickupOrder, updateOrderStatus } from '../../action'
 import { IDetectedBarcode } from '@yudiel/react-qr-scanner'
 import { OrderStatus } from '@prisma/client'
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify';
 
 interface PickupScannerModalProps {
     isOpen: boolean
@@ -189,8 +189,8 @@ export default function PickupScannerModal({ isOpen, onClose }: PickupScannerMod
             await updateOrderStatus(scannedOrder.id, OrderStatus.COMPLETED)
             setIsCompleted(true)
             toast.success("Order marked as completed!", {
-                icon: '🎉',
-                duration: 3000
+                icon: () => <span>🎉</span>,
+                autoClose: 3000
             })
         } catch (err) {
             console.error(err)

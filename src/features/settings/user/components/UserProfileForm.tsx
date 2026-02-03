@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react';
 import { updateUserProfile } from '../action';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 interface UserProfileFormProps {
   initialData: {

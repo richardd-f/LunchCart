@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Shop, ShopStatus, User, UserShopRole } from '@prisma/client';
 import { updateShopStatus, deleteShop } from '../action';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { showConfirmationToast } from '@/components/ConfirmationToast';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 

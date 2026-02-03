@@ -4,7 +4,7 @@ import React from 'react'
 import Image from 'next/image'
 import { getShopOrders, updateOrderStatus } from '../action'
 import { OrderStatus, PaymentStatus } from '@prisma/client'
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify';
 import { showConfirmationToast } from '@/components/ConfirmationToast'
 
 // Use the actual return type from getShopOrders

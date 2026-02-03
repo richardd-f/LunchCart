@@ -4,7 +4,7 @@ import { useActionState, useState, useEffect } from 'react';
 import { createShop } from '../action';
 import UploadButton from '@/components/UploadButton';
 import Image from 'next/image';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function ShopRequestForm() {
   const [state, action, isPending] = useActionState(createShop, {});

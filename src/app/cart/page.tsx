@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { getCartItems, createOrder, updateCartItemQuantity, CartItemWithDetails } from '@/features/cart/action';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 // Define Snap type globally
 declare global {
@@ -117,13 +117,13 @@ export default function CartPage() {
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) {
       // Use toast for confirmation
-      toast((t) => (
+      toast(({ closeToast }) => (
         <div className="flex flex-col gap-2">
           <span className="font-medium text-gray-800">Remove this item from cart?</span>
           <div className="flex gap-2 justify-end">
              <button
               onClick={() => {
-                toast.dismiss(t.id);
+                if (closeToast) closeToast();
                 // Do nothing
               }}
               className="px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
@@ -132,7 +132,7 @@ export default function CartPage() {
             </button>
             <button
               onClick={() => {
-                toast.dismiss(t.id);
+                if (closeToast) closeToast();
                 executeQuantityUpdate(itemId, newQuantity);
               }}
               className="px-3 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
@@ -141,7 +141,7 @@ export default function CartPage() {
             </button>
           </div>
         </div>
-      ), { duration: 4000 });
+      ), { autoClose: 4000 });
       return;
     }
     

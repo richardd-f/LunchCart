@@ -21,7 +21,7 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 interface MenuDashboardProps {
   initialMeals: MealWithRelations[];

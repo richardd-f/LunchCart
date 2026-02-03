@@ -6,7 +6,7 @@ import OrderFilter from './OrderFilter'
 import OrderCard from './OrderCard'
 import { getMyOrders, createPaymentToken, cancelOrder } from '../action'
 
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify';
 
 // Use the actual return type from getMyOrders (with Decimal converted to number)
 type OrderWithDetails = Awaited<ReturnType<typeof getMyOrders>>[number]

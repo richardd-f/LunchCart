@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import QRCode from "react-qr-code"
-import toast from 'react-hot-toast'
+import { toast } from 'react-toastify';
 import { getMyOrders } from '../action'
 
 // Use the actual return type from getMyOrders (with Decimal converted to number)
@@ -31,8 +31,8 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
 
         if (order.orderStatus !== 'READY') {
             toast("Order is not ready. Please wait until the food is READY. You will be notified via WhatsApp.", {
-                icon: '⏳',
-                duration: 4000
+                icon: () => <span>⏳</span>,
+                autoClose: 4000
             })
             return
         }

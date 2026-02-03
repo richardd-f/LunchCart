@@ -5,7 +5,8 @@ import "./globals.css";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
-import { Toaster } from "react-hot-toast";
+import { ToastContainer } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -109,33 +110,20 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <SessionProvider>
-          <Toaster
+          <ToastContainer
             position="top-center"
-            reverseOrder={false}
-            gutter={8}
-            containerClassName=""
-            containerStyle={{}}
-            toasterId="default"
-            toastOptions={{
-              className: '',
-              duration: 5000,
-              removeDelay: 1000,
-              style: {
-                background: '#FFF',
-                color: '#363636',
-              },
-
-              // Default options for specific types
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: 'green',
-                  secondary: 'white',
-                },
-              },
-            }}
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
           />
           <NavBar />
+          <NavbarSpace />
           <div className="flex-grow">
             {children}
           </div>
@@ -144,4 +132,9 @@ export default function RootLayout({
       </body>
     </html>
   );
+}
+
+// Simple spacer to avoid navbar overlap if fixed, though layout seems to use flex-grow
+function NavbarSpace() {
+  return null; 
 }

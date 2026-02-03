@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import QRScanner from './QRScanner';
 import { getOrderDetails, completeOrder } from '../../action';
 import { IDetectedBarcode } from '@yudiel/react-qr-scanner';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 interface CheckOrderScannerModalProps {
     isOpen: boolean;
