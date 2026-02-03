@@ -11,6 +11,7 @@ interface PhoneSetupReminderModalProps {
 
 export default function PhoneSetupReminderModal({ phoneNumber, remindPhoneSetup }: PhoneSetupReminderModalProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [dontAskAgain, setDontAskAgain] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -24,8 +25,10 @@ export default function PhoneSetupReminderModal({ phoneNumber, remindPhoneSetup 
         router.push('/settings');
     };
 
-    const handleDontRemind = async () => {
-        await disablePhoneReminder();
+    const handleClose = async () => {
+        if (dontAskAgain) {
+            await disablePhoneReminder();
+        }
         setIsOpen(false);
     };
 
@@ -55,13 +58,27 @@ export default function PhoneSetupReminderModal({ phoneNumber, remindPhoneSetup 
                     </button>
                     
                     <button
-                        onClick={handleDontRemind}
-                        className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold rounded-xl transition-colors"
+                        onClick={handleClose}
+                        className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
                     >
-                        Maybe later
+                        Remind me later
                     </button>
+
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                        <input 
+                            type="checkbox" 
+                            id="dontAskAgain" 
+                            checked={dontAskAgain}
+                            onChange={(e) => setDontAskAgain(e.target.checked)}
+                            className="w-4 h-4 text-[#F97352] border-gray-300 rounded focus:ring-[#F97352]"
+                        />
+                        <label htmlFor="dontAskAgain" className="text-xs text-gray-500 font-medium cursor-pointer select-none">
+                            Don't ask me again
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>
     );
+
 }
