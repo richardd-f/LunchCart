@@ -34,6 +34,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(0);
+  const [discountPrice, setDiscountPrice] = useState<number>(0);
   const [category, setCategory] = useState<MealCategory>('MEAL');
   const [isAvailable, setIsAvailable] = useState(true);
   const [allowNotes, setAllowNotes] = useState(false);
@@ -67,6 +68,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
         setName(initialData.name);
         setDescription(initialData.description);
         setPrice(initialData.price);
+        setDiscountPrice(initialData.discountPrice || 0);
         setCategory(initialData.category);
         setIsAvailable(initialData.isAvailable);
         setAllowNotes(initialData.allowNotes ?? false);
@@ -95,6 +97,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
         setName('');
         setDescription('');
         setPrice(0);
+        setDiscountPrice(0);
         setCategory('MEAL');
         setIsAvailable(true);
         setAllowNotes(false);
@@ -123,6 +126,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
       name,
       description,
       price,
+      discountPrice,
       category,
       isAvailable,
       allowNotes,
@@ -267,6 +271,23 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
                     required
                     value={price}
                     onChange={(e) => setPrice(parseFloat(e.target.value))}
+                    className="block w-full rounded-md border-gray-300 pl-8 focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none p-2 border bg-gray-50/50"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Discount Price <span className="text-xs text-gray-500">(Optional, 0 to disable)</span></label>
+                <div className="relative mt-1 rounded-md shadow-sm">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <span className="text-gray-500 sm:text-sm">Rp </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="0"
+                    step="500"
+                    value={discountPrice}
+                    onChange={(e) => setDiscountPrice(parseFloat(e.target.value))}
                     className="block w-full rounded-md border-gray-300 pl-8 focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none p-2 border bg-gray-50/50"
                   />
                 </div>

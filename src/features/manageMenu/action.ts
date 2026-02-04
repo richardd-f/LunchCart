@@ -38,6 +38,7 @@ export interface SerializableMeal {
   name: string;
   description: string;
   price: number; // Changed from Decimal
+  discountPrice: number; // New field
   category: MealCategory;
   isAvailable: boolean;
   orderNumber: number;
@@ -76,6 +77,7 @@ export type CreateMealInput = {
   name: string;
   description: string;
   price: number;
+  discountPrice: number;
   category: MealCategory;
   isAvailable: boolean;
   allowNotes: boolean;
@@ -145,6 +147,7 @@ export async function getMeals(
     const serializableMeals: SerializableMeal[] = meals.map(meal => ({
       ...meal,
       price: Number(meal.price),
+      discountPrice: Number(meal.discountPrice),
       optionGroups: meal.optionGroups.map(group => ({
         ...group,
         values: group.values.map(val => ({
@@ -241,6 +244,7 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
     const serializableMeal: SerializableMeal = {
         ...meal,
         price: Number(meal.price),
+        discountPrice: Number(meal.discountPrice),
         optionGroups: meal.optionGroups.map(g => ({
             ...g,
             values: g.values.map(v => ({
@@ -278,6 +282,7 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
           name: data.name,
           description: data.description,
           price: data.price,
+          discountPrice: data.discountPrice,
           category: data.category,
           isAvailable: data.isAvailable,
           allowNotes: data.allowNotes,
@@ -345,6 +350,7 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
     const serializableMeal: SerializableMeal = {
         ...updatedMeal,
         price: Number(updatedMeal.price),
+        discountPrice: Number(updatedMeal.discountPrice),
         optionGroups: updatedMeal.optionGroups.map(g => ({
             ...g,
             values: g.values.map(v => ({
@@ -414,6 +420,7 @@ export async function toggleMealAvailability(id: string): Promise<ActionResult<S
     const serializableMeal: SerializableMeal = {
         ...updated,
         price: Number(updated.price),
+        discountPrice: Number(updated.discountPrice),
         optionGroups: updated.optionGroups.map(g => ({
             ...g,
             values: g.values.map(v => ({

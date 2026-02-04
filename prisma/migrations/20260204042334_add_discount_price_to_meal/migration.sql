@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "meals" ADD COLUMN     "discountPrice" DECIMAL(10,2) NOT NULL DEFAULT 0,
+ALTER COLUMN "category" SET DEFAULT 'MEAL';
