@@ -450,6 +450,12 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
               </>
             )}
 
+            {!isUsingTimePickup && (
+              <p className="mt-2 text-sm text-gray-500">
+                Customers will choose from the labels you defined (e.g. Lunch Break).
+              </p>
+            )}
+
             {/* Daily Order Limit - Available for both modes */}
             <div className="mt-6 pt-4 border-t border-gray-200">
               <label htmlFor="dailyOrderLimit" className="block text-sm font-medium text-gray-700">
@@ -575,12 +581,6 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                  </div>
                </div>
             </div>
-
-            {!isUsingTimePickup && (
-              <p className="mt-2 text-sm text-gray-500">
-                Customers will choose from the labels you defined (e.g. Lunch Break).
-              </p>
-            )}
 
             {/* Show New Menu Section Toggle */}
             <div className="mt-6 pt-4 border-t border-gray-200">
