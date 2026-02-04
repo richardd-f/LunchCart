@@ -35,6 +35,8 @@ export async function getShopProfile() {
       isUsingTimePickup: true,
       pickupTimes: true,
       pickupLabels: true,
+      orderSchedules: true,
+      orderScheduleMode: true,
     },
   });
 
@@ -168,6 +170,19 @@ export async function updateShopProfile(
   const pickupTimes = formData.getAll('pickupTimes') as string[];
   const pickupLabels = formData.getAll('pickupLabels') as string[];
 
+  // Order Schedule
+  const orderScheduleMode = (formData.get('orderScheduleMode') as 'OFF' | 'ON') || 'OFF';
+  const orderSchedulesJson = formData.get('orderSchedules') as string;
+  let orderSchedules: { day: string; startTime: string; endTime: string }[] = [];
+
+  if (orderSchedulesJson) {
+      try {
+          orderSchedules = JSON.parse(orderSchedulesJson);
+      } catch (e) {
+          console.error('Failed to parse order schedules JSON', e);
+      }
+  }
+
   if (!shopId) {
     return { error: 'Shop ID is missing' };
   }
@@ -205,6 +220,7 @@ export async function updateShopProfile(
                 dailyOrderLimit,
                 showNewMenuSection,
                 isUsingTimePickup,
+                orderScheduleMode,
             },
         });
 
@@ -234,6 +250,22 @@ export async function updateShopProfile(
                      label,
                  }))
              });
+        }
+
+        // Update Order Schedules
+        await tx.orderSchedule.deleteMany({
+            where: { shopId: shopId },
+        });
+
+        if (orderSchedules.length > 0) {
+            await tx.orderSchedule.createMany({
+                data: orderSchedules.map(schedule => ({
+                    shopId: shopId,
+                    day: schedule.day,
+                    startTime: schedule.startTime,
+                    endTime: schedule.endTime,
+                }))
+            });
         }
     });
 

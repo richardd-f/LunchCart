@@ -138,6 +138,8 @@ export async function createOrder(
             dailyOrderLimit: true, 
             name: true,
             isUsingTimePickup: true,
+            orderScheduleMode: true,
+            orderSchedules: true,
         },
     });
 
@@ -205,6 +207,58 @@ export async function createOrder(
 
         if (orderCount >= shop.dailyOrderLimit) {
             return { error: 'We’re fully booked for this date! We’d love to serve you another time—please check our calendar for the next available opening. 😊' };
+        }
+    }
+
+    // Validate Order Schedule (New Feature)
+    // We check against the CURRENT time when the user is trying to place the order.
+    if (shop.orderScheduleMode !== 'OFF' || shop.orderSchedules.length > 0) {
+        const now = new Date();
+        const currentBufferDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+        const currentDay = currentBufferDate.toLocaleDateString('en-US', { weekday: 'long' }); // e.g., "Monday"
+        
+        // Helper to convert HH:MM to minutes
+        const getMinutes = (timeStr: string) => {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+        
+        const currentMinutes = currentBufferDate.getHours() * 60 + currentBufferDate.getMinutes();
+
+        // Find schedules for today
+        const todaysSchedules = shop.orderSchedules.filter(s => s.day === currentDay);
+
+        if (shop.orderScheduleMode === 'OFF') {
+             // "Off Time" mode: User CANNOT buy if current time is WITHIN any of the ranges
+             for (const schedule of todaysSchedules) {
+                 const start = getMinutes(schedule.startTime);
+                 const end = getMinutes(schedule.endTime);
+                 
+                 if (currentMinutes >= start && currentMinutes < end) {
+                      return { error: `Sorry, this shop is currently not accepting orders (Off Time: ${schedule.startTime} - ${schedule.endTime}). Please try again later.` };
+                 }
+             }
+        } else if (shop.orderScheduleMode === 'ON') {
+             // "On Time" mode: User CAN ONLY buy if current time is WITHIN at least one of the ranges
+             // If there are no schedules for today, implies closed? Or open? Usually "On Time" implies detailed allow-list. 
+             // If no schedule for today -> assuming CLOSED for consistency with "Allowed Times".
+             
+             let isAllowed = false;
+             if (todaysSchedules.length > 0) {
+                 for (const schedule of todaysSchedules) {
+                     const start = getMinutes(schedule.startTime);
+                     const end = getMinutes(schedule.endTime);
+                     
+                     if (currentMinutes >= start && currentMinutes < end) {
+                         isAllowed = true;
+                         break;
+                     }
+                 }
+             }
+
+             if (!isAllowed) {
+                 return { error: `Sorry, this shop is currently closed. We only accept orders during our scheduled hours.` };
+             }
         }
     }
 

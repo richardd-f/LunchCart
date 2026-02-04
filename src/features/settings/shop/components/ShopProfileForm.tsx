@@ -27,6 +27,13 @@ interface ShopProfileFormProps {
         id: string;
         label: string;
     }[];
+    orderScheduleMode: 'OFF' | 'ON';
+    orderSchedules: {
+        id: string;
+        day: string;
+        startTime: string;
+        endTime: string;
+    }[];
   } | null;
 }
 
@@ -77,6 +84,26 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
   );
   const [isUsingTimePickup, setIsUsingTimePickup] = useState(initialData.isUsingTimePickup ?? true);
   const [showNewMenuSection, setShowNewMenuSection] = useState(initialData.showNewMenuSection ?? true);
+
+  // Order Schedule State
+  const [orderScheduleMode, setOrderScheduleMode] = useState<'OFF' | 'ON'>(initialData.orderScheduleMode || 'OFF');
+  const [orderSchedules, setOrderSchedules] = useState<{id?: string, day: string, startTime: string, endTime: string}[]>(
+      initialData.orderSchedules || []
+  );
+
+  const addSchedule = () => {
+      setOrderSchedules([...orderSchedules, { day: 'Monday', startTime: '09:00', endTime: '17:00' }]);
+  };
+
+  const removeSchedule = (index: number) => {
+      setOrderSchedules(orderSchedules.filter((_, i) => i !== index));
+  };
+
+  const updateSchedule = (index: number, field: string, value: string) => {
+      const newSchedules = [...orderSchedules];
+      newSchedules[index] = { ...newSchedules[index], [field]: value };
+      setOrderSchedules(newSchedules);
+  };
 
   const addPickupTime = () => {
     setPickupTimes([...pickupTimes, '12:00']);
@@ -443,6 +470,110 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                 Set to 0 for unlimited orders.
               </p>
               <input type="hidden" name="dailyOrderLimit" value={dailyOrderLimit.toString()} />
+            </div>
+
+            {/* Order Schedule Settings */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+               <h4 className="text-base font-medium text-gray-900 mb-4">Order Schedule</h4>
+               
+               {/* Mode Selection */}
+               <div className="flex items-center justify-between mb-6">
+                 <div>
+                    <h4 className="text-sm font-medium text-gray-900">Schedule Mode</h4>
+                    <p className="text-sm text-gray-500">
+                        {orderScheduleMode === 'OFF' 
+                            ? "Off Time: Customers CANNOT order during the specified times." 
+                            : "On Time: Customers CAN ONLY order during the specified times."}
+                    </p>
+                 </div>
+                 <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setOrderScheduleMode('OFF')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        orderScheduleMode === 'OFF' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      Off Time
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderScheduleMode('ON')}
+                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                        orderScheduleMode === 'ON' ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                      }`}
+                    >
+                      On Time
+                    </button>
+                 </div>
+               </div>
+               <input type="hidden" name="orderScheduleMode" value={orderScheduleMode} />
+                <input type="hidden" name="orderSchedules" value={JSON.stringify(orderSchedules)} />
+
+               {/* Schedule List */}
+               <div className="bg-gray-50 p-4 rounded-md">
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Schedules
+                 </label>
+                 <div className="space-y-3">
+                   {orderSchedules.map((schedule, index) => (
+                     <div key={index} className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                       <select
+                         value={schedule.day}
+                         onChange={(e) => updateSchedule(index, 'day', e.target.value)}
+                         className="block w-full sm:w-auto rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                       >
+                         {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                             <option key={day} value={day}>{day}</option>
+                         ))}
+                       </select>
+                       <div className="flex items-center gap-2">
+                           <input
+                             type="time"
+                             value={schedule.startTime}
+                             onChange={(e) => updateSchedule(index, 'startTime', e.target.value)}
+                             className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                             required
+                           />
+                           <span className="text-gray-500">-</span>
+                           <input
+                             type="time"
+                             value={schedule.endTime}
+                             onChange={(e) => updateSchedule(index, 'endTime', e.target.value)}
+                             className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                             required
+                           />
+                       </div>
+                       
+                       <button
+                         type="button"
+                         onClick={() => removeSchedule(index)}
+                         className="text-red-500 hover:text-red-700 p-2 ml-auto sm:ml-0"
+                       >
+                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                           <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                         </svg>
+                       </button>
+                     </div>
+                   ))}
+                   {orderSchedules.length === 0 && (
+                       <p className="text-sm text-gray-500 italic">No schedules defined.</p>
+                   )}
+                 </div>
+
+                 <div className="mt-3">
+                   <button
+                     type="button"
+                     onClick={addSchedule}
+                     className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F97352]"
+                   >
+                     <svg className="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                       <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                     </svg>
+                     Add Schedule
+                   </button>
+                 </div>
+               </div>
             </div>
 
             {!isUsingTimePickup && (

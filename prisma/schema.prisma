@@ -146,14 +146,36 @@ model Shop {
   updatedAt          DateTime   @updatedAt @map("updated_at")
 
   // Relations
-  meals        Meal[]
-  userRoles    UserShopRole[]
-  wallet       ShopWallet?
-  orders       Order[]
-  pickupTimes  PickupTime[]
-  pickupLabels PickupLabel[]
+  meals          Meal[]
+  userRoles      UserShopRole[]
+  wallet         ShopWallet?
+  orders         Order[]
+  pickupTimes    PickupTime[]
+  pickupLabels   PickupLabel[]
+  orderSchedules OrderSchedule[]
+
+  orderScheduleMode OrderScheduleMode @default(OFF) @map("order_schedule_mode")
 
   @@map("shops")
+}
+
+model OrderSchedule {
+  id        String   @id @default(cuid())
+  shopId    String   @map("shop_id")
+  day       String   @db.VarChar(10) // Monday, Tuesday, etc.
+  startTime String   @map("start_time") @db.VarChar(5) // HH:MM
+  endTime   String   @map("end_time") @db.VarChar(5) // HH:MM
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@map("order_schedules")
+}
+
+enum OrderScheduleMode {
+  OFF
+  ON
 }
 
 model PickupTime {
