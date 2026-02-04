@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { checkWhatsappPhone } from '@/lib/gowa';
 
 export async function getUserProfile() {
   const session = await auth();
@@ -52,7 +53,7 @@ export async function updateUserProfile(
     }
 
     if (!cleanedPhone.startsWith('62')) {
-      return { error: 'Phone number must start with country code 62 (e.g., 628123456789)' };
+      return { error: 'Phone number must start with country code (e.g., 628123456789)' };
     }
 
     // Check minimum length (country code + at least 8 digits)
@@ -71,6 +72,16 @@ export async function updateUserProfile(
 
     if (existingUser) {
       return { error: 'This phone number is already registered to another account' };
+    }
+
+    // Check if phone is registered on WhatsApp
+    const waCheck = await checkWhatsappPhone(cleanedPhone);
+    if (!waCheck.success) {
+      return { error: 'Failed to verify WhatsApp status. Please try again later.' };
+    }
+
+    if (!waCheck.data) {
+      return { error: 'This phone number is not registered on WhatsApp.' };
     }
   }
 
