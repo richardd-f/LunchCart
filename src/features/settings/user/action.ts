@@ -44,9 +44,16 @@ export async function updateUserProfile(
     return { error: 'Name is required' };
   }
 
+  let formattedPhone: string | null = null;
+
   // Phone number validation
   if (phone) {
-    const cleanedPhone = phone.replace(/[\s\-\+]/g, '');
+    let cleanedPhone = phone.replace(/[\s\-\+]/g, '');
+
+    // Replace leading 0 with 62
+    if (cleanedPhone.startsWith('0')) {
+        cleanedPhone = '62' + cleanedPhone.substring(1);
+    }
 
     if (!/^\d+$/.test(cleanedPhone)) {
       return { error: 'Phone number must contain only digits (e.g., 628123456789)' };
@@ -83,17 +90,16 @@ export async function updateUserProfile(
     if (!waCheck.data) {
       return { error: 'This phone number is not registered on WhatsApp.' };
     }
+
+    formattedPhone = cleanedPhone;
   }
 
   try {
-    // Store the cleaned phone number (digits only)
-    const cleanedPhone = phone ? phone.replace(/[\s\-\+]/g, '') : null;
-
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
         name,
-        phone: cleanedPhone,
+        phone: formattedPhone,
       },
     });
 
