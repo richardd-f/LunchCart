@@ -35,7 +35,7 @@ export const metadata: Metadata = {
     default: "Kantin Sanjose | Pesan Makan Online",
     template: "%s | Kantin Sanjose",
   },
-  description: "Website resmi Kantin Sanjose. Pesan makanan dan minuman online dengan mudah di SMA Santo Yoseph Denpasar. Hemat waktu, tanpa antri.",
+  description: "Website resmi Kantin Sanjose. Pre-Order makanan dan minuman online dengan mudah di SMA Santo Yoseph Denpasar. Hemat waktu, tanpa antri.",
   
   // 4. Base URL helps Google resolve relative links
   metadataBase: new URL(BASE_URL),
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   // 5. Open Graph (How it looks on WhatsApp/Facebook)
   openGraph: {
     title: "Kantin Sanjose",
-    description: "Pesan makanan online di SMA Santo Yoseph Denpasar. Cepat dan Praktis.",
+    description: "Pre-Order makanan dan minuman online di SMA Santo Yoseph Denpasar. Cepat dan Praktis.",
     url: BASE_URL,
     siteName: "Kantin Sanjose",
     locale: "id_ID", 
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Kantin Sanjose",
-    description: "Pesan makanan online di SMA Santo Yoseph Denpasar.",
+    description: "Pre-Order makanan dan minuman online di SMA Santo Yoseph Denpasar. Cepat dan Praktis.",
     images: ["/og-image.jpeg"],
   },
 
