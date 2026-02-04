@@ -57,9 +57,21 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
                             <div className="flex justify-between items-start">
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">{meal.name}</h1>
                             </div>
-                            <p className="text-2xl font-bold text-[#F97352]">
-                                Rp {Number(meal.price).toLocaleString('id-ID')}
-                            </p>
+                            
+                            {Number(meal.discountPrice) > 0 ? (
+                                <div className="flex flex-col">
+                                    <span className="text-sm text-gray-400 line-through decoration-1 decoration-gray-400">
+                                        Rp {Number(meal.price).toLocaleString('id-ID')}
+                                    </span>
+                                    <p className="text-2xl font-bold text-[#F97352]">
+                                        Rp {Number(meal.discountPrice).toLocaleString('id-ID')}
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-2xl font-bold text-[#F97352]">
+                                    Rp {Number(meal.price).toLocaleString('id-ID')}
+                                </p>
+                            )}
                              <div className="mt-1 flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${meal.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                     {meal.isAvailable ? 'Available' : 'Unavailable'}

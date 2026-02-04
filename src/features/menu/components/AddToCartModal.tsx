@@ -51,7 +51,8 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
     }
 
     const calculateTotal = () => {
-        let total = Number(meal.price)
+        const basePrice = Number(meal.discountPrice) > 0 ? Number(meal.discountPrice) : Number(meal.price)
+        let total = basePrice
         
         // Add options price
         Object.values(selectedOptions).flat().forEach(valId => {
@@ -121,7 +122,18 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                     {/* Header Info */}
                     <div>
                         <h3 className="font-semibold text-gray-800">{meal.name}</h3>
-                        <p className="text-[#F97352] font-bold">Rp {Number(meal.price).toLocaleString('id-ID')}</p>
+                        {Number(meal.discountPrice) > 0 ? (
+                            <div className="flex flex-col">
+                                <span className="text-xs text-gray-400 line-through decoration-1 decoration-gray-400">
+                                    Rp {Number(meal.price).toLocaleString('id-ID')}
+                                </span>
+                                <p className="text-[#F97352] font-bold">
+                                    Rp {Number(meal.discountPrice).toLocaleString('id-ID')}
+                                </p>
+                            </div>
+                        ) : (
+                            <p className="text-[#F97352] font-bold">Rp {Number(meal.price).toLocaleString('id-ID')}</p>
+                        )}
                     </div>
 
                     {/* Options */}

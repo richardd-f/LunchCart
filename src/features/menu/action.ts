@@ -19,6 +19,7 @@ export interface MealWithDetails {
     name: string
     description: string
     price: number
+    discountPrice: number
     // category: "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE"
     category: MealCategory
     isAvailable: boolean
@@ -116,6 +117,7 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
     return {
         ...meal,
         price: Number(meal.price),
+        discountPrice: Number(meal.discountPrice),
         allowNotes: meal.allowNotes,
         category: meal.category as "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE", 
         optionGroups: meal.optionGroups.map(group => ({

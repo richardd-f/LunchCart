@@ -15,6 +15,7 @@ export type CartItemWithDetails = {
         id: string;
         name: string;
         price: number; // Decimal converted to number for client
+        discountPrice: number;
         description: string;
         shopId: string;
         shop: {
@@ -85,6 +86,7 @@ export async function getCartItems() {
         meal: {
             ...item.meal,
             price: Number(item.meal.price),
+            discountPrice: Number(item.meal.discountPrice),
             shop: {
                 id: item.meal.shop.id,
                 name: item.meal.shop.name,
@@ -298,7 +300,12 @@ export async function createOrder(
 
     let itemIndex = 0;
     for (const item of cartItems) {
-        const basePrice = Math.round(Number(item.meal.price));
+        // Use discount price if available and greater than 0, otherwise use regular price
+        const discountPrice = Number(item.meal.discountPrice || 0);
+        const regularPrice = Number(item.meal.price);
+        const finalPrice = discountPrice > 0 ? discountPrice : regularPrice;
+        
+        const basePrice = Math.round(finalPrice);
         let itemTotal = basePrice;
         const itemOptions: { optionName: string; price: any }[] = [];
 
@@ -337,7 +344,7 @@ export async function createOrder(
             mealId: item.mealId,
             mealName: item.meal.name,
             quantity: item.quantity,
-            price: item.meal.price,
+            price: basePrice,
             notes: item.notes,
             options: {
                 create: itemOptions,

@@ -13,6 +13,7 @@ export type ShopMenuWithImages = {
   name: string;
   description: string;
   price: number; // Converted from Decimal
+  discountPrice: number;
   category: MealCategory;
   isAvailable: boolean;
   createdAt: Date;
@@ -69,6 +70,7 @@ export async function getShopMenus(
     const serializedMenus: ShopMenuWithImages[] = menus.map(menu => ({
       ...menu,
       price: Number(menu.price),
+      discountPrice: Number(menu.discountPrice),
     }));
 
     return { success: true, data: serializedMenus };
@@ -102,6 +104,7 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
         const serializedMenus: ShopMenuWithImages[] = newMenus.map(menu => ({
             ...menu,
             price: Number(menu.price),
+            discountPrice: Number(menu.discountPrice),
         }));
 
         return { success: true, data: serializedMenus };

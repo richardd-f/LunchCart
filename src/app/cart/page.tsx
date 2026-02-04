@@ -152,7 +152,7 @@ export default function CartPage() {
   const calculateTotal = (shopId: string) => {
     const items = groupedItems[shopId] || [];
     return items.reduce((sum, item) => {
-      let itemPrice = Number(item.meal.price);
+      let itemPrice = Number(item.meal.discountPrice) > 0 ? Number(item.meal.discountPrice) : Number(item.meal.price);
       item.options.forEach((opt) => {
           itemPrice += Number(opt.mealOptionValue.price);
       });
@@ -334,9 +334,22 @@ export default function CartPage() {
                                 <div>
                                     <div className="flex justify-between text-base font-medium text-gray-900">
                                         <h3 className="font-bold">{item.meal.name}</h3>
-                                        <p className="ml-4 text-sm font-normal text-gray-400">
-                                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.price))}
-                                        </p>
+                                        <div className="ml-4 text-sm font-normal">
+                                          {Number(item.meal.discountPrice) > 0 ? (
+                                              <div className="flex flex-col items-end">
+                                                  <span className="text-xs text-gray-400 line-through decoration-1 decoration-gray-400">
+                                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.price))}
+                                                  </span>
+                                                  <span className="text-[#F97352] font-bold">
+                                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.discountPrice))}
+                                                  </span>
+                                              </div>
+                                          ) : (
+                                              <span className="text-gray-400">
+                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.price))}
+                                              </span>
+                                          )}
+                                        </div>
                                     </div>
                                     {item.options.length > 0 && (
                                         <ul className="mt-1 text-sm text-gray-500 list-disc list-inside">
@@ -377,7 +390,7 @@ export default function CartPage() {
                                     </div>
                                     <p className="font-bold text-gray-900 text-lg">
                                         {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-                                            (Number(item.meal.price) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
+                                            ((Number(item.meal.discountPrice) > 0 ? Number(item.meal.discountPrice) : Number(item.meal.price)) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
                                         )}
                                     </p>
                                 </div>
