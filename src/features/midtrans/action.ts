@@ -136,7 +136,7 @@ export async function updatePaymentStatus(
                         })
                         : 'Tidak ditentukan')
 
-                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lunchcart.vercel.app';
+                const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lunch.felitech.site';
 
                 const message = `🛒 *Pesanan Baru - SUDAH DIBAYAR!*
 
