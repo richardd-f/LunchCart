@@ -5,6 +5,8 @@ import "./globals.css";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { PageTransition } from "@/components/PageTransition";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -109,6 +111,7 @@ export default function RootLayout({
         suppressHydrationWarning={true}
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
+        <AnimatedBackground />
         <SessionProvider>
           <ToastContainer
             position="top-center"
@@ -124,9 +127,9 @@ export default function RootLayout({
           />
           <NavBar />
           <NavbarSpace />
-          <div className="flex-grow">
+          <PageTransition>
             {children}
-          </div>
+          </PageTransition>
           <Footer />
         </SessionProvider>
       </body>

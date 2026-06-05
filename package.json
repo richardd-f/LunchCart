@@ -19,6 +19,7 @@
     "dotenv": "^17.2.3",
     "eslint-config-next": "^15.5.9",
     "midtrans-client": "^1.4.3",
+    "motion": "^12.40.0",
     "next": "^15.5.9",
     "next-auth": "5.0.0-beta.30",
     "next-cloudinary": "^6.17.5",
