@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ShopMenuWithImages } from '../actions';
 import { MenuCard } from './MenuCard';
 import { MealCategory } from '@prisma/client';
+import { Reveal } from '@/components/Reveal';
 
 interface MenuGridProps {
   menus: ShopMenuWithImages[];
@@ -24,19 +25,22 @@ export function MenuGrid({ menus }: MenuGridProps) {
 
   return (
     <section>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Our Menu</h2>
-        
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <h2 className="flex items-center gap-2.5 text-xl font-bold text-gray-900">
+          <span className="inline-block h-6 w-1.5 rounded-full bg-gradient-to-b from-[#F97352] to-amber-400" />
+          Our Menu
+        </h2>
+
         {/* Category Tabs */}
-        <div className="flex overflow-x-auto pb-2 sm:pb-0 gap-2 hide-scrollbar">
+        <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2 sm:pb-0">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={`
-                px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors
-                ${selectedCategory === cat 
-                    ? 'bg-gray-900 text-white' 
+                whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all
+                ${selectedCategory === cat
+                    ? 'bg-[#F97352] text-white shadow-md shadow-orange-200'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
               `}
             >
@@ -47,16 +51,16 @@ export function MenuGrid({ menus }: MenuGridProps) {
       </div>
 
       {filteredMenus.length > 0 ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {filteredMenus.map((menu) => (
-            <div key={menu.id}>
+        <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+          {filteredMenus.map((menu, i) => (
+            <Reveal key={menu.id} delay={(i % 8) * 0.04} y={20}>
               <MenuCard menu={menu} />
-            </div>
+            </Reveal>
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-           <p className="text-gray-500">No items found in this category.</p>
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 py-20 text-center backdrop-blur-sm">
+          <p className="text-gray-500">No items found in this category.</p>
         </div>
       )}
     </section>

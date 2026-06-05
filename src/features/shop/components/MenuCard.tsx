@@ -18,8 +18,8 @@ export function MenuCard({ menu }: MenuCardProps) {
   }).format(Number(menu.price));
 
   return (
-    <Link href={`/menu/${menu.id}`} className="block group h-full">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full hover:shadow-md transition-shadow duration-300 flex flex-col">
+    <Link href={`/menu/${menu.id}`} className="group block h-full">
+      <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100/60">
         {/* Image Container */}
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-100">
           {primaryImage ? (

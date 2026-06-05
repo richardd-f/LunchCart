@@ -6,6 +6,7 @@ import { getMealDetails } from '@/features/menu/action'
 import MenuImages from '@/features/menu/components/MenuImages'
 import ReviewSection from '@/features/menu/components/ReviewSection'
 import AddToCartButtonWrapper from './AddToCartButtonWrapper'
+import { Reveal } from '@/components/Reveal'
 
 export default async function MenuDetailsPage({ params }: { params: Promise<{ menuId: string }> }) {
     const { menuId } = await params
@@ -16,25 +17,25 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
     }
 
     return (
-        <div className="min-h-screen bg-white pb-24 md:pb-10">
-            {/* Desktop: Centered Container */}
-            <div className="max-w-7xl mx-auto md:px-6 md:py-8">
-                
+        <div className="relative flex flex-1 flex-col pb-24 md:pb-10">
+            {/* Vertically + horizontally centered when content is shorter than the viewport */}
+            <div className="mx-auto my-auto w-full max-w-7xl md:px-6 md:py-8">
+
                 {/* Back Button (Mobile) */}
                 <div className="md:hidden absolute top-4 left-4 z-10">
                     <Link href="/" className="bg-white/80 backdrop-blur-md p-2 rounded-full shadow-sm text-gray-700 hover:bg-white transition-all">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     </Link>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
                     {/* Left: Images */}
-                    <div>
+                    <Reveal y={16}>
                         <MenuImages images={meal.images} mealName={meal.name} />
-                    </div>
+                    </Reveal>
 
                     {/* Right: Details */}
-                    <div className="px-4 py-6 md:py-0 space-y-6">
+                    <Reveal y={16} delay={0.1} className="px-4 py-6 md:py-0 space-y-6">
                         {/* Shop Header */}
                         <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
                              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 shadow-sm border border-gray-100">
@@ -92,7 +93,7 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
 
                         {/* Reviews */}
                         <ReviewSection latestReview={meal.orderItems[0]} />
-                    </div>
+                    </Reveal>
                 </div>
             </div>
         </div>

@@ -3,6 +3,7 @@ import { getShopDetails, getShopMenus, getNewShopMenus } from '@/features/shop/a
 import { ShopHeader } from '@/features/shop/components/ShopHeader';
 import { NewMenuSection } from '@/features/shop/components/NewMenuSection';
 import { MenuGrid } from '@/features/shop/components/MenuGrid';
+import { Reveal } from '@/components/Reveal';
 
 interface PageProps {
   params: Promise<{ shopId: string }>;
@@ -26,23 +27,27 @@ export default async function ShopPage({ params }: PageProps) {
   const newMenusResult = await getNewShopMenus(shopId, 5);
   const newMenus = newMenusResult.success && newMenusResult.data ? newMenusResult.data : [];
 
+  const showNewMenu = shop.showNewMenuSection && newMenus.length > 0;
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+    <div className="flex flex-1 flex-col pb-20">
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Shop Header Section */}
-        <ShopHeader shop={shop} />
+        <Reveal y={16}>
+          <ShopHeader shop={shop} />
+        </Reveal>
 
         {/* New Menu Section */}
-        {shop.showNewMenuSection && newMenus.length > 0 && (
-           <NewMenuSection menus={newMenus} />
+        {showNewMenu && (
+          <Reveal y={20} delay={0.05}>
+            <NewMenuSection menus={newMenus} />
+          </Reveal>
         )}
-        
-        {shop.showNewMenuSection && newMenus.length > 0 && <div className="h-px bg-gray-200 my-8" />}
 
         {/* All Menu Grid with Filters */}
-        <MenuGrid menus={allMenus} />
-        
+        <Reveal y={20} delay={showNewMenu ? 0.1 : 0.05}>
+          <MenuGrid menus={allMenus} />
+        </Reveal>
       </main>
     </div>
   );
