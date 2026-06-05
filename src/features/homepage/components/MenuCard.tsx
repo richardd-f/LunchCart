@@ -20,45 +20,49 @@ export function MenuCard({ name, price, discountPrice, imageUrl }: MenuCardProps
   };
 
   const formattedPrice = formatPrice(price);
-  const formattedDiscountPrice = discountPrice && Number(discountPrice) > 0 ? formatPrice(discountPrice) : null;
+  const hasDiscount = discountPrice != null && Number(discountPrice) > 0;
+  const formattedDiscountPrice = hasDiscount ? formatPrice(discountPrice!) : null;
+  const discountPct = hasDiscount && Number(price) > 0
+    ? Math.round((1 - Number(discountPrice) / Number(price)) * 100)
+    : 0;
 
   return (
-    <div className="flex-shrink-0 w-full bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden snap-start hover:shadow-lg transition-shadow duration-300">
-      <div className="relative h-32 md:h-40 lg:h-48 w-full bg-gray-100">
+    <div className="group h-full overflow-hidden rounded-2xl border border-gray-100 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100/60">
+      <div className="relative h-32 w-full overflow-hidden bg-gray-100 md:h-40 lg:h-44">
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={name}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
             sizes="(max-width: 768px) 160px, (max-width: 1024px) 240px, 288px"
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
+          <div className="flex h-full items-center justify-center text-gray-300">
             <span className="text-xs md:text-sm">No Image</span>
           </div>
         )}
+
+        {discountPct > 0 && (
+          <span className="absolute left-2 top-2 rounded-full bg-[#F97352] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+            -{discountPct}%
+          </span>
+        )}
       </div>
+
       <div className="p-3 md:p-4">
-        <h3 className="text-sm md:text-lg font-semibold text-gray-800 line-clamp-1" title={name}>
+        <h3 className="line-clamp-1 text-sm font-semibold text-gray-800 md:text-base" title={name}>
           {name}
         </h3>
-        
-        {formattedDiscountPrice ? (
-             <div className="mt-1 flex flex-col">
-                  <span className="text-xs text-gray-400 line-through decoration-1 decoration-gray-400">
-                      {formattedPrice}
-                  </span>
-                  <p className="text-sm md:text-lg font-bold text-[#F97352]">
-                      {formattedDiscountPrice}
-                  </p>
-             </div>
-        ) : (
-             <p className="mt-1 text-sm md:text-lg font-bold text-[#F97352]">
-                  {formattedPrice}
-             </p>
-        )}
 
+        {formattedDiscountPrice ? (
+          <div className="mt-1 flex items-baseline gap-2">
+            <p className="text-sm font-bold text-[#F97352] md:text-lg">{formattedDiscountPrice}</p>
+            <span className="text-xs text-gray-400 line-through decoration-1">{formattedPrice}</span>
+          </div>
+        ) : (
+          <p className="mt-1 text-sm font-bold text-[#F97352] md:text-lg">{formattedPrice}</p>
+        )}
       </div>
     </div>
   );
