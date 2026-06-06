@@ -7,4 +7,5 @@ export interface ShopWithMeals extends Shop{
 
 export interface MealWithImages extends Meal{
     images: MealImage[];
+    discounts: { id: string }[];
 }

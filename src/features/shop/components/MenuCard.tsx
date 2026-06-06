@@ -42,6 +42,15 @@ export function MenuCard({ menu }: MenuCardProps) {
               {menu.category}
             </span>
           </div>
+
+          {/* Promo Badge */}
+          {menu.hasActiveDiscount && (
+            <div className="absolute top-2 right-2">
+              <span className="px-2 py-1 bg-[#F97352] text-[10px] uppercase font-bold tracking-wider rounded-md text-white shadow-sm">
+                Promo
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -54,19 +63,10 @@ export function MenuCard({ menu }: MenuCardProps) {
           </p>
           
           <div className="flex items-end justify-between mt-auto pt-3 border-t border-gray-50">
-             <div className="flex flex-col">
-                {menu.discountPrice > 0 && (
-                    <span className="text-xs text-gray-400 line-through decoration-1 decoration-gray-400">
-                      {formattedPrice}
-                    </span>
-                )}
-                <span className={`font-bold text-gray-900 text-lg ${menu.discountPrice > 0 ? 'text-[#F97352]' : ''}`}>
-                    {menu.discountPrice > 0 
-                      ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(menu.discountPrice)
-                      : formattedPrice}
-                </span>
-             </div>
-             
+             <span className="font-bold text-gray-900 text-lg">
+                {formattedPrice}
+             </span>
+
              <MenuCardAddButton mealId={menu.id} />
           </div>
         </div>

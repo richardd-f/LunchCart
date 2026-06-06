@@ -10,7 +10,7 @@ interface ShopSectionProps {
     id: string;
     name: string;
     price: number | string;
-    discountPrice?: number | string; // Optional field
+    hasActiveDiscount?: boolean;
     images: Array<{ imagePath: string }>;
   }>;
 }
@@ -47,7 +47,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
               <MenuCard
                 name={meal.name}
                 price={meal.price.toString()}
-                discountPrice={meal.discountPrice}
+                hasActiveDiscount={meal.hasActiveDiscount}
                 imageUrl={meal.images[0]?.imagePath}
               />
             </Link>
@@ -64,7 +64,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
                 <MenuCard
                   name={meal.name}
                   price={meal.price.toString()}
-                  discountPrice={meal.discountPrice}
+                  hasActiveDiscount={meal.hasActiveDiscount}
                   imageUrl={meal.images[0]?.imagePath}
                 />
               </Link>

@@ -4,11 +4,11 @@ import React from 'react';
 interface MenuCardProps {
   name: string;
   price: number | string;
-  discountPrice?: number | string;
+  hasActiveDiscount?: boolean;
   imageUrl?: string | null;
 }
 
-export function MenuCard({ name, price, discountPrice, imageUrl }: MenuCardProps) {
+export function MenuCard({ name, price, hasActiveDiscount, imageUrl }: MenuCardProps) {
   // Format price helper
   const formatPrice = (amount: number | string) => {
     return new Intl.NumberFormat('id-ID', {
@@ -20,11 +20,6 @@ export function MenuCard({ name, price, discountPrice, imageUrl }: MenuCardProps
   };
 
   const formattedPrice = formatPrice(price);
-  const hasDiscount = discountPrice != null && Number(discountPrice) > 0;
-  const formattedDiscountPrice = hasDiscount ? formatPrice(discountPrice!) : null;
-  const discountPct = hasDiscount && Number(price) > 0
-    ? Math.round((1 - Number(discountPrice) / Number(price)) * 100)
-    : 0;
 
   return (
     <div className="group h-full overflow-hidden rounded-2xl border border-gray-100 bg-white/90 shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-100/60">
@@ -43,9 +38,9 @@ export function MenuCard({ name, price, discountPrice, imageUrl }: MenuCardProps
           </div>
         )}
 
-        {discountPct > 0 && (
-          <span className="absolute left-2 top-2 rounded-full bg-[#F97352] px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
-            -{discountPct}%
+        {hasActiveDiscount && (
+          <span className="absolute left-2 top-2 rounded-full bg-[#F97352] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+            Promo
           </span>
         )}
       </div>
@@ -55,14 +50,7 @@ export function MenuCard({ name, price, discountPrice, imageUrl }: MenuCardProps
           {name}
         </h3>
 
-        {formattedDiscountPrice ? (
-          <div className="mt-1 flex items-baseline gap-2">
-            <p className="text-sm font-bold text-[#F97352] md:text-lg">{formattedDiscountPrice}</p>
-            <span className="text-xs text-gray-400 line-through decoration-1">{formattedPrice}</span>
-          </div>
-        ) : (
-          <p className="mt-1 text-sm font-bold text-[#F97352] md:text-lg">{formattedPrice}</p>
-        )}
+        <p className="mt-1 text-sm font-bold text-[#F97352] md:text-lg">{formattedPrice}</p>
       </div>
     </div>
   );

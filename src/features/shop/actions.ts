@@ -13,7 +13,7 @@ export type ShopMenuWithImages = {
   name: string;
   description: string;
   price: number; // Converted from Decimal
-  discountPrice: number;
+  hasActiveDiscount: boolean;
   category: MealCategory;
   isAvailable: boolean;
   createdAt: Date;
@@ -59,6 +59,7 @@ export async function getShopMenus(
           select: { imagePath: true, isPrimary: true },
           orderBy: { isPrimary: 'desc' }
         },
+        discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
       },
       orderBy: [
         { orderNumber: 'asc' },
@@ -67,11 +68,14 @@ export async function getShopMenus(
     });
 
     // Convert Decimal to number for serialization
-    const serializedMenus: ShopMenuWithImages[] = menus.map(menu => ({
-      ...menu,
-      price: Number(menu.price),
-      discountPrice: Number(menu.discountPrice),
-    }));
+    const serializedMenus: ShopMenuWithImages[] = menus.map((menu) => {
+      const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
+      return {
+        ...rest,
+        price: Number(menu.price),
+        hasActiveDiscount: discounts.length > 0,
+      };
+    });
 
     return { success: true, data: serializedMenus };
     
@@ -92,7 +96,8 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
                 images: {
                     select: { imagePath: true, isPrimary: true },
                     orderBy: { isPrimary: 'desc' }
-                }
+                },
+                discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
             },
             orderBy: {
                 createdAt: 'desc',
@@ -101,11 +106,14 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
         });
 
         // Convert Decimal to number for serialization
-        const serializedMenus: ShopMenuWithImages[] = newMenus.map(menu => ({
-            ...menu,
-            price: Number(menu.price),
-            discountPrice: Number(menu.discountPrice),
-        }));
+        const serializedMenus: ShopMenuWithImages[] = newMenus.map((menu) => {
+            const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
+            return {
+                ...rest,
+                price: Number(menu.price),
+                hasActiveDiscount: discounts.length > 0,
+            };
+        });
 
         return { success: true, data: serializedMenus };
     } catch (error) {

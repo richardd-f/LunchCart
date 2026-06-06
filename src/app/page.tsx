@@ -82,7 +82,7 @@ export default async function Home({ searchParams }: HomeProps) {
               id: m.id,
               name: m.name,
               price: Number(m.price),
-              discountPrice: Number(m.discountPrice),
+              hasActiveDiscount: m.discounts.length > 0,
               images: m.images,
             }))}
           />

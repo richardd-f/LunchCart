@@ -29,7 +29,8 @@ export async function getHomepageData(searchQuery?: string): Promise<ActionResul
               where:{
                 isPrimary: true,
               }
-            }
+            },
+            discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
           },
           take: 10,
         }

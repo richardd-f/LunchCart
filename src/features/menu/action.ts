@@ -19,7 +19,7 @@ export interface MealWithDetails {
     name: string
     description: string
     price: number
-    discountPrice: number
+    hasActiveDiscount: boolean
     // category: "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE"
     category: MealCategory
     isAvailable: boolean
@@ -69,6 +69,7 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
             images: {
                 orderBy: { order: 'asc' }
             },
+            discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
             shop: {
                 select: {
                     id: true,
@@ -114,12 +115,13 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
     if (!meal) return null
 
     // Manually map to plain object to handle Decimal -> Number conversion
+    const { discountPrice: _omitDiscountPrice, discounts, ...rest } = meal;
     return {
-        ...meal,
+        ...rest,
         price: Number(meal.price),
-        discountPrice: Number(meal.discountPrice),
+        hasActiveDiscount: discounts.length > 0,
         allowNotes: meal.allowNotes,
-        category: meal.category as "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE", 
+        category: meal.category as "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE",
         optionGroups: meal.optionGroups.map(group => ({
             ...group,
             values: group.values.map(val => ({
