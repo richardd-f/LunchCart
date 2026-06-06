@@ -33,20 +33,20 @@ export default async function ShopPage({ params }: PageProps) {
     <div className="flex flex-1 flex-col pb-20">
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Shop Header Section */}
-        <Reveal y={16}>
+        <Reveal y={16} immediate>
           <ShopHeader shop={shop} />
         </Reveal>
 
         {/* New Menu Section */}
         {showNewMenu && (
-          <Reveal y={20} delay={0.05}>
+          <Reveal y={20} delay={0.05} immediate>
             <NewMenuSection menus={newMenus} />
           </Reveal>
         )}
 
         {/* All Menu Grid with Filters */}
-        <Reveal y={20} delay={showNewMenu ? 0.1 : 0.05}>
-          <MenuGrid menus={allMenus} />
+        <Reveal y={20} delay={showNewMenu ? 0.1 : 0.05} immediate={!showNewMenu}>
+          <MenuGrid menus={allMenus} immediateFirstRow={!showNewMenu} />
         </Reveal>
       </main>
     </div>

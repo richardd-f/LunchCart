@@ -59,6 +59,7 @@ export function NewMenuSection({ menus }: NewMenuSectionProps) {
                   key={menu.id}
                   delay={i * 0.07}
                   y={24}
+                  immediate
                   className="min-w-[80vw] w-[80vw] snap-center sm:min-w-[300px] sm:w-[300px] md:min-w-[340px] md:w-[340px]"
                 >
                   <div className="transform rounded-4xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/20">

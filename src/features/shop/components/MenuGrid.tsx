@@ -8,9 +8,11 @@ import { Reveal } from '@/components/Reveal';
 
 interface MenuGridProps {
   menus: ShopMenuWithImages[];
+  /** Play the first row on mount instead of on scroll (when this is the first food section). */
+  immediateFirstRow?: boolean;
 }
 
-export function MenuGrid({ menus }: MenuGridProps) {
+export function MenuGrid({ menus, immediateFirstRow = false }: MenuGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<MealCategory | 'ALL'>('ALL');
 
   // Filter menus based on selection
@@ -53,7 +55,12 @@ export function MenuGrid({ menus }: MenuGridProps) {
       {filteredMenus.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
           {filteredMenus.map((menu, i) => (
-            <Reveal key={menu.id} delay={(i % 8) * 0.04} y={20}>
+            <Reveal
+              key={menu.id}
+              delay={(i % 8) * 0.04}
+              y={20}
+              immediate={immediateFirstRow && i < 4}
+            >
               <MenuCard menu={menu} />
             </Reveal>
           ))}

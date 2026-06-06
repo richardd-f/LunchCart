@@ -23,7 +23,7 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
 
                 {/* Back Button (Mobile) */}
                 <div className="md:hidden absolute top-4 left-4 z-10">
-                    <Link href="/" className="bg-white/80 backdrop-blur-md p-2 rounded-full shadow-sm text-gray-700 hover:bg-white transition-all">
+                    <Link href="/" className="inline-flex items-center justify-center bg-white/80 backdrop-blur-md p-2 rounded-full shadow-sm text-gray-700 hover:bg-white transition-all">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                     </Link>
                 </div>

@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShopMenuWithImages } from '../actions';
 import { MealCategory } from '@prisma/client';
+import { MenuCardAddButton } from './MenuCardAddButton';
 
 interface MenuCardProps {
   menu: ShopMenuWithImages;
@@ -66,11 +67,7 @@ export function MenuCard({ menu }: MenuCardProps) {
                 </span>
              </div>
              
-             <button className="w-8 h-8 rounded-full bg-orange-50 text-[#F97352] flex items-center justify-center hover:bg-[#F97352] hover:text-white transition-colors mb-1">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                  <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-                </svg>
-             </button>
+             <MenuCardAddButton mealId={menu.id} />
           </div>
         </div>
       </div>

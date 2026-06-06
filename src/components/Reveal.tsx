@@ -13,6 +13,8 @@ interface RevealProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
   once?: boolean;
   /** Fraction of the element that must be visible before triggering. */
   amount?: number;
+  /** Play on mount instead of waiting to scroll into view (for above-the-fold content). */
+  immediate?: boolean;
 }
 
 /**
@@ -25,15 +27,20 @@ export function Reveal({
   y = 24,
   once = true,
   amount = 0.2,
+  immediate = false,
   ...rest
 }: RevealProps) {
   const reduce = useReducedMotion();
 
+  // Above-the-fold content plays on mount; everything else waits to scroll into view.
+  const trigger = immediate
+    ? { animate: { opacity: 1, y: 0 } }
+    : { whileInView: { opacity: 1, y: 0 }, viewport: { once, amount } };
+
   return (
     <motion.div
       initial={reduce ? false : { opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once, amount }}
+      {...trigger}
       transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
       {...rest}
     >
