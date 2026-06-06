@@ -1,11 +1,11 @@
 import React from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
-import Link from 'next/link'
 import { getMealDetails } from '@/features/menu/action'
 import MenuImages from '@/features/menu/components/MenuImages'
 import ReviewSection from '@/features/menu/components/ReviewSection'
 import AddToCartButtonWrapper from './AddToCartButtonWrapper'
+import BackButton from './BackButton'
 import { Reveal } from '@/components/Reveal'
 
 export default async function MenuDetailsPage({ params }: { params: Promise<{ menuId: string }> }) {
@@ -23,9 +23,7 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
 
                 {/* Back Button (Mobile) */}
                 <div className="md:hidden absolute top-4 left-4 z-10">
-                    <Link href="/" className="inline-flex items-center justify-center bg-white/80 backdrop-blur-md p-2 rounded-full shadow-sm text-gray-700 hover:bg-white transition-all">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                    </Link>
+                    <BackButton />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
