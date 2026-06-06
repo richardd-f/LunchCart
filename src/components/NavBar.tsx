@@ -50,6 +50,7 @@ export function NavBar() {
                 <NavDropdown label={'Shop'} items={[
                     {label: "Shop Orders",href: '/dashboard/shop/shopOrders'},
                     {label: "Manage Menu",href: '/dashboard/shop/manageMenu'},
+                    {label: "Manage Discounts",href: '/dashboard/shop/manageDiscounts'},
                     {label: "Shop Wallet",href: '/dashboard/shop/shopWallet'},
                   ]}
                 />
@@ -201,15 +202,22 @@ export function NavBar() {
                 >
                   Shop Orders
                 </Link>
-                <Link 
-                  href="/dashboard/shop/manageMenu" 
+                <Link
+                  href="/dashboard/shop/manageMenu"
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Manage Menu
                 </Link>
-                <Link 
-                  href="/dashboard/shop/shopWallet" 
+                <Link
+                  href="/dashboard/shop/manageDiscounts"
+                  className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Manage Discounts
+                </Link>
+                <Link
+                  href="/dashboard/shop/shopWallet"
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
