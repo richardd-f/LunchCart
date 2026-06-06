@@ -40,9 +40,9 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
       </div>
 
       {/* Row 1 */}
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 scrollbar-hide">
-        {evenMeals.map((meal, i) => (
-          <Reveal key={meal.id} delay={i * 0.05} y={20} className={cardWidth}>
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 scroll-pl-6 scrollbar-hide">
+        {evenMeals.map((meal) => (
+          <div key={meal.id} className={cardWidth}>
             <Link href={`/menu/${meal.id}`} className="block h-full">
               <MenuCard
                 name={meal.name}
@@ -51,15 +51,15 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
                 imageUrl={meal.images[0]?.imagePath}
               />
             </Link>
-          </Reveal>
+          </div>
         ))}
       </div>
 
       {/* Row 2 */}
       {meals.length > 1 && (
-        <div className="-mt-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 scrollbar-hide">
-          {oddMeals.map((meal, i) => (
-            <Reveal key={meal.id} delay={i * 0.05} y={20} className={cardWidth}>
+        <div className="-mt-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 scroll-pl-6 scrollbar-hide">
+          {oddMeals.map((meal) => (
+            <div key={meal.id} className={cardWidth}>
               <Link href={`/menu/${meal.id}`} className="block h-full">
                 <MenuCard
                   name={meal.name}
@@ -68,7 +68,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
                   imageUrl={meal.images[0]?.imagePath}
                 />
               </Link>
-            </Reveal>
+            </div>
           ))}
         </div>
       )}
