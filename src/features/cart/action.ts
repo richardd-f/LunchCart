@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsApp } from '@/lib/gowa';
+import { calculateOrderDiscounts, DiscountRule, DiscountableItem } from '@/features/discounts/calculateDiscount';
 
 // Type definitions for Cart items with relations
 export type CartItemWithDetails = {
@@ -15,7 +16,7 @@ export type CartItemWithDetails = {
         id: string;
         name: string;
         price: number; // Decimal converted to number for client
-        discountPrice: number;
+        discounts: DiscountRule[]; // active discounts linked to this meal
         description: string;
         shopId: string;
         shop: {
@@ -67,6 +68,9 @@ export async function getCartItems() {
                         where: { isPrimary: true },
                         take: 1,
                     },
+                    discounts: {
+                        where: { isActive: true },
+                    },
                 },
             },
             options: {
@@ -81,30 +85,39 @@ export async function getCartItems() {
     });
 
     // Convert Decimals to numbers for client safety
-    return cartItems.map(item => ({
-        ...item,
-        meal: {
-            ...item.meal,
-            price: Number(item.meal.price),
-            discountPrice: Number(item.meal.discountPrice),
-            shop: {
-                id: item.meal.shop.id,
-                name: item.meal.shop.name,
-                fixedTimePickup: item.meal.shop.fixedTimePickup,
-                isUsingTimePickup: item.meal.shop.isUsingTimePickup ?? true, // Added default
-                orderCutoffMinutes: item.meal.shop.orderCutoffMinutes,
-                pickupTimes: item.meal.shop.pickupTimes || [],
-                pickupLabels: item.meal.shop.pickupLabels || [], // Added
-            }
-        },
-        options: item.options.map(opt => ({
-            ...opt,
-            mealOptionValue: {
-                ...opt.mealOptionValue,
-                price: Number(opt.mealOptionValue.price),
+    return cartItems.map(item => {
+        const { discountPrice: _omitDiscountPrice, discounts, shop, ...mealRest } = item.meal;
+        return {
+            ...item,
+            meal: {
+                ...mealRest,
+                price: Number(item.meal.price),
+                discounts: discounts.map(d => ({
+                    id: d.id,
+                    name: d.name,
+                    percentage: Number(d.percentage),
+                    minOrderSubtotal: Number(d.minOrderSubtotal),
+                    maxDiscountAmount: Number(d.maxDiscountAmount),
+                })),
+                shop: {
+                    id: shop.id,
+                    name: shop.name,
+                    fixedTimePickup: shop.fixedTimePickup,
+                    isUsingTimePickup: shop.isUsingTimePickup ?? true, // Added default
+                    orderCutoffMinutes: shop.orderCutoffMinutes,
+                    pickupTimes: shop.pickupTimes || [],
+                    pickupLabels: shop.pickupLabels || [], // Added
+                }
             },
-        })),
-    })) as CartItemWithDetails[];
+            options: item.options.map(opt => ({
+                ...opt,
+                mealOptionValue: {
+                    ...opt.mealOptionValue,
+                    price: Number(opt.mealOptionValue.price),
+                },
+            })),
+        };
+    }) as CartItemWithDetails[];
 }
 
 export type CreateOrderState = {
@@ -174,7 +187,11 @@ export async function createOrder(
             },
         },
         include: {
-            meal: true,
+            meal: {
+                include: {
+                    discounts: { where: { isActive: true } },
+                },
+            },
             options: {
                 include: {
                     mealOptionValue: true,
@@ -298,14 +315,13 @@ export async function createOrder(
         quantity: number;
     }[] = [];
 
+    // Accumulators for the order-level discount engine
+    const discountItems: DiscountableItem[] = [];
+    const ruleMap = new Map<string, DiscountRule>();
+
     let itemIndex = 0;
     for (const item of cartItems) {
-        // Use discount price if available and greater than 0, otherwise use regular price
-        const discountPrice = Number(item.meal.discountPrice || 0);
-        const regularPrice = Number(item.meal.price);
-        const finalPrice = discountPrice > 0 ? discountPrice : regularPrice;
-        
-        const basePrice = Math.round(finalPrice);
+        const basePrice = Math.round(Number(item.meal.price));
         let itemTotal = basePrice;
         const itemOptions: { optionName: string; price: any }[] = [];
 
@@ -340,6 +356,23 @@ export async function createOrder(
 
         calculatedTotal += itemTotal * item.quantity;
 
+        discountItems.push({
+            lineTotal: itemTotal * item.quantity,
+            eligibleBase: basePrice * item.quantity,
+            discountIds: item.meal.discounts.map((d) => d.id),
+        });
+        for (const d of item.meal.discounts) {
+            if (!ruleMap.has(d.id)) {
+                ruleMap.set(d.id, {
+                    id: d.id,
+                    name: d.name,
+                    percentage: Number(d.percentage),
+                    minOrderSubtotal: Number(d.minOrderSubtotal),
+                    maxDiscountAmount: Number(d.maxDiscountAmount),
+                });
+            }
+        }
+
         orderItemsData.push({
             mealId: item.mealId,
             mealName: item.meal.name,
@@ -350,9 +383,21 @@ export async function createOrder(
                 create: itemOptions,
             },
         });
-        
+
         itemIndex++;
     }
+
+    // Apply order-level discounts (server-authoritative; ignores client total).
+    const discountResult = calculateOrderDiscounts(discountItems, Array.from(ruleMap.values()));
+    discountResult.applied.forEach((d, i) => {
+        midtransItems.push({
+            id: `DISC-${i}`,
+            name: `Disc: ${d.name}`.substring(0, 50),
+            price: -d.amount,
+            quantity: 1,
+        });
+    });
+    const grossAmount = calculatedTotal - discountResult.totalDiscount;
 
     const midtrans = new (require('midtrans-client').Snap)({
         isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
@@ -365,7 +410,7 @@ export async function createOrder(
     const parameter = {
         transaction_details: {
             order_id: orderId,
-            gross_amount: calculatedTotal,
+            gross_amount: grossAmount,
         },
         item_details: midtransItems,
         credit_card: {
@@ -388,7 +433,7 @@ export async function createOrder(
                     orderStatus: 'PENDING',
                     paymentStatus: 'PENDING',
                     midtransOrderId: orderId,
-                    totalAmount: calculatedTotal,
+                    totalAmount: grossAmount,
                     snapToken: '', // Will be updated after Midtrans transaction
                     pickupDate: pickupDateTime,
                     pickupLabel: pickupLabel || null, // Added
@@ -445,7 +490,7 @@ export async function createOrder(
                 style: 'currency',
                 currency: 'IDR',
                 maximumFractionDigits: 0,
-            }).format(calculatedTotal);
+            }).format(grossAmount);
 
             const formattedPickup = pickupDateTime.toLocaleString('id-ID', {
                 dateStyle: 'medium',

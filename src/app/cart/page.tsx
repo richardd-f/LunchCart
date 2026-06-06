@@ -5,7 +5,16 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import { getCartItems, createOrder, updateCartItemQuantity, CartItemWithDetails } from '@/features/cart/action';
+import {
+  calculateOrderDiscounts,
+  DiscountableItem,
+  DiscountResult,
+  DiscountRule,
+} from '@/features/discounts/calculateDiscount';
 import { toast } from 'react-toastify';
+
+const formatIDR = (amount: number) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
 
 // Define Snap type globally
 declare global {
@@ -149,16 +158,25 @@ export default function CartPage() {
     executeQuantityUpdate(itemId, newQuantity);
   };
 
-  const calculateTotal = (shopId: string) => {
+  const getDiscountResult = (shopId: string): DiscountResult => {
     const items = groupedItems[shopId] || [];
-    return items.reduce((sum, item) => {
-      let itemPrice = Number(item.meal.discountPrice) > 0 ? Number(item.meal.discountPrice) : Number(item.meal.price);
-      item.options.forEach((opt) => {
-          itemPrice += Number(opt.mealOptionValue.price);
+    const ruleMap = new Map<string, DiscountRule>();
+    const discountItems: DiscountableItem[] = items.map((item) => {
+      const basePrice = Number(item.meal.price);
+      const optionsSum = item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0);
+      item.meal.discounts.forEach((d) => {
+        if (!ruleMap.has(d.id)) ruleMap.set(d.id, d);
       });
-      return sum + (itemPrice * item.quantity);
-    }, 0);
+      return {
+        lineTotal: (basePrice + optionsSum) * item.quantity,
+        eligibleBase: basePrice * item.quantity,
+        discountIds: item.meal.discounts.map((d) => d.id),
+      };
+    });
+    return calculateOrderDiscounts(discountItems, Array.from(ruleMap.values()));
   };
+
+  const calculateTotal = (shopId: string) => getDiscountResult(shopId).total;
 
   const handleOrder = async () => {
     if (!selectedShopId) {
@@ -280,7 +298,7 @@ export default function CartPage() {
           {Object.entries(groupedItems).map(([shopId, items]) => {
             const shop = getShopDetails(shopId);
             const isSelected = selectedShopId === shopId;
-            const shopTotal = calculateTotal(shopId);
+            const discountResult = getDiscountResult(shopId);
 
             return (
               <div 
@@ -333,22 +351,18 @@ export default function CartPage() {
                             <div className="flex flex-1 flex-col">
                                 <div>
                                     <div className="flex justify-between text-base font-medium text-gray-900">
-                                        <h3 className="font-bold">{item.meal.name}</h3>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-bold">{item.meal.name}</h3>
+                                            {item.meal.discounts.length > 0 && (
+                                                <span className="rounded-full bg-[#F97352]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F97352]">
+                                                    Promo
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="ml-4 text-sm font-normal">
-                                          {Number(item.meal.discountPrice) > 0 ? (
-                                              <div className="flex flex-col items-end">
-                                                  <span className="text-xs text-gray-400 line-through decoration-1 decoration-gray-400">
-                                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.price))}
-                                                  </span>
-                                                  <span className="text-[#F97352] font-bold">
-                                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.discountPrice))}
-                                                  </span>
-                                              </div>
-                                          ) : (
-                                              <span className="text-gray-400">
-                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(item.meal.price))}
-                                              </span>
-                                          )}
+                                          <span className="text-gray-400">
+                                            {formatIDR(Number(item.meal.price))}
+                                          </span>
                                         </div>
                                     </div>
                                     {item.options.length > 0 && (
@@ -389,8 +403,8 @@ export default function CartPage() {
                                         </button>
                                     </div>
                                     <p className="font-bold text-gray-900 text-lg">
-                                        {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(
-                                            ((Number(item.meal.discountPrice) > 0 ? Number(item.meal.discountPrice) : Number(item.meal.price)) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
+                                        {formatIDR(
+                                            (Number(item.meal.price) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
                                         )}
                                     </p>
                                 </div>
@@ -453,12 +467,25 @@ export default function CartPage() {
                             </div>
                         </div>
                         
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
-                             <div className="text-base font-medium text-gray-900">
-                                Total
+                        <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
+                             <div className="flex items-center justify-between text-sm text-gray-600">
+                                <span>Subtotal</span>
+                                <span>{formatIDR(discountResult.subtotal)}</span>
                              </div>
-                             <div className="text-xl font-bold text-[#F97352]">
-                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(shopTotal)}
+                             {discountResult.applied.map((d) => (
+                                <div key={d.id} className="flex items-center justify-between text-sm text-green-600">
+                                   <span className="flex items-center gap-1">
+                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 014 12V7a4 4 0 014-4z" />
+                                      </svg>
+                                      {d.name}
+                                   </span>
+                                   <span>-{formatIDR(d.amount)}</span>
+                                </div>
+                             ))}
+                             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                <div className="text-base font-medium text-gray-900">Total</div>
+                                <div className="text-xl font-bold text-[#F97352]">{formatIDR(discountResult.total)}</div>
                              </div>
                         </div>
 
