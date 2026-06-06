@@ -34,7 +34,7 @@ export function MenuGrid({ menus, immediateFirstRow = false }: MenuGridProps) {
         </h2>
 
         {/* Category Tabs */}
-        <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+        <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-2 sm:pb-0">
           {categories.map((cat) => (
             <button
               key={cat}
