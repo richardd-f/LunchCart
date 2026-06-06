@@ -32,11 +32,25 @@ RUN pnpm prisma generate
 RUN pnpm build
 RUN ls -la .next && ls -la .next/standalone
 
-# Prisma 7 generates a hash-based runtime package (e.g. @prisma/client-<hash>) in
-# node_modules during `prisma generate`. Next.js standalone file-tracing does not
-# capture it because it isn't a declared npm dependency. Copy the whole @prisma
-# scope (following pnpm symlinks with -L) so the package is present at runtime.
-RUN rm -rf /app/.next/standalone/node_modules/@prisma && cp -rL /app/node_modules/@prisma /app/.next/standalone/node_modules/
+# NOTE: Do NOT hand-copy @prisma into the standalone output. Next.js file-tracing
+# already bundles the full Prisma runtime closure into
+# `.next/standalone/node_modules/.pnpm` (the @prisma/client package, its generated
+# `.prisma/client` wasm client, @prisma/client-runtime-utils, @prisma/adapter-pg
+# and its transitive deps). The top-level `node_modules/@prisma/*` symlinks point
+# at `node_modules/.pnpm/...`, which is exactly where they land in the runner once
+# the standalone output is copied to /app — the same mechanism that already works
+# for `pg`. A manual `rm -rf @prisma && cp` clobbers those symlinks with an
+# incomplete copy and is what previously broke `require('.prisma/client/default')`.
+# The runner stage below verifies the client resolves before the image is finalized.
+
+# Belt-and-suspenders (additive, non-destructive): if tracing ever fails to place
+# the generated wasm client next to the traced @prisma/client, copy it in. This is
+# a no-op when tracing already bundled `.prisma` (the normal case) and never
+# touches the pnpm symlinks that make resolution work.
+RUN set -eux; \
+    for d in /app/.next/standalone/node_modules/.pnpm/@prisma+client@*/node_modules; do \
+      [ -d "$d/.prisma" ] || cp -rL /app/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma "$d/"; \
+    done
 
 # -------- Stage 2: Runtime --------
 FROM node:22-slim AS runner
@@ -65,14 +79,20 @@ COPY --from=builder /app/prisma.config.ts ./
 
 # Install CLI tools (prisma, tsx, dotenv) in an isolated /tools directory.
 # Running pnpm here instead of inside /app ensures pnpm never reconciles or
-# rewrites the pre-generated @prisma/client that was copied via cp -rL in the
-# builder stage. /app/node_modules remains exactly as the builder left it.
+# rewrites the standalone /app/node_modules that Next.js produced — it must stay
+# exactly as the builder left it so the traced Prisma client keeps resolving.
 WORKDIR /tools
 RUN --mount=type=cache,id=pnpm-tools,target=/pnpm/store \
     pnpm config set store-dir /pnpm/store && \
     pnpm add prisma@7.2.0 tsx dotenv
 
 WORKDIR /app
+
+# Fail the build (not runtime) if the Prisma runtime client can't be resolved from
+# the standalone output. This runs in the real runner layout, so it catches any
+# packaging regression before the image ships.
+RUN node -e "require('@prisma/client'); require('@prisma/adapter-pg'); require('pg'); console.log('Runtime deps resolved OK');"
+
 EXPOSE 3000
 
 CMD ["node", "server.js"]
