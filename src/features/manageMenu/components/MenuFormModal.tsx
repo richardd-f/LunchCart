@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CreateMealInput, MealImageInput, OptionGroupInput, createMeal, updateMeal, ActionResult, MealWithRelations, SerializableMeal } from '../action';
+import { CreateMealInput, MealImageInput, OptionGroupInput, createMeal, updateMeal, ActionResult, MealWithRelations, SerializableMeal, ShopDiscountOption } from '../action';
 import { MealCategory } from '@prisma/client';
 import UploadButton from '@/components/UploadButton';
 import OptionManager from './OptionManager';
@@ -25,21 +25,22 @@ interface MenuFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialData?: MealWithRelations;
+  shopDiscounts: ShopDiscountOption[];
   onSuccess: () => void;
 }
 
 const CATEGORIES: MealCategory[] = ['MEAL', 'SNACK', 'DRINK', 'DESSERT', 'TOOL', 'SAUCE'];
 
-export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess }: MenuFormModalProps) {
+export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscounts, onSuccess }: MenuFormModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(0);
-  const [discountPrice, setDiscountPrice] = useState<number>(0);
   const [category, setCategory] = useState<MealCategory>('MEAL');
   const [isAvailable, setIsAvailable] = useState(true);
   const [allowNotes, setAllowNotes] = useState(false);
   const [images, setImages] = useState<MealImageInput[]>([]);
   const [optionGroups, setOptionGroups] = useState<OptionGroupInput[]>([]);
+  const [selectedDiscountIds, setSelectedDiscountIds] = useState<string[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,11 +69,11 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
         setName(initialData.name);
         setDescription(initialData.description);
         setPrice(initialData.price);
-        setDiscountPrice(initialData.discountPrice || 0);
         setCategory(initialData.category);
         setIsAvailable(initialData.isAvailable);
         setAllowNotes(initialData.allowNotes ?? false);
-        
+        setSelectedDiscountIds(initialData.discounts.map((d) => d.id));
+
         // Map images
         setImages(initialData.images.map(img => ({
             imagePath: img.imagePath,
@@ -97,18 +98,24 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
         setName('');
         setDescription('');
         setPrice(0);
-        setDiscountPrice(0);
         setCategory('MEAL');
         setIsAvailable(true);
         setAllowNotes(false);
         setImages([]);
         setOptionGroups([]);
+        setSelectedDiscountIds([]);
       }
       setError(null);
     }
   }, [isOpen, initialData]);
 
   if (!isOpen) return null;
+
+  const toggleDiscount = (id: string) => {
+    setSelectedDiscountIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,12 +133,12 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
       name,
       description,
       price,
-      discountPrice,
       category,
       isAvailable,
       allowNotes,
       images: processedImages,
       optionGroups,
+      discountIds: selectedDiscountIds,
     };
 
     let result: ActionResult<SerializableMeal>;
@@ -277,20 +284,51 @@ export default function MenuFormModal({ isOpen, onClose, initialData, onSuccess 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Discount Price <span className="text-xs text-gray-500">(Optional, 0 to disable)</span></label>
-                <div className="relative mt-1 rounded-md shadow-sm">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <span className="text-gray-500 sm:text-sm">Rp </span>
+                <label className="block text-sm font-medium text-gray-700">
+                  Discounts{' '}
+                  <span className="text-xs text-gray-500">({selectedDiscountIds.length} selected)</span>
+                </label>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Tap to apply a discount to this menu. Manage discounts in{' '}
+                  <span className="font-medium">Manage Discounts</span>.
+                </p>
+                {shopDiscounts.length === 0 ? (
+                  <p className="mt-2 text-sm text-gray-500 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    No discounts yet. Create one in Manage Discounts first.
+                  </p>
+                ) : (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {shopDiscounts.map((discount) => {
+                      const selected = selectedDiscountIds.includes(discount.id);
+                      return (
+                        <button
+                          type="button"
+                          key={discount.id}
+                          onClick={() => toggleDiscount(discount.id)}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                            selected
+                              ? 'border-[#F97352] bg-[#F97352] text-white'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-[#F97352] hover:text-[#F97352]'
+                          }`}
+                        >
+                          <span>{discount.name}</span>
+                          <span className={selected ? 'text-white/90' : 'text-gray-400'}>
+                            {discount.percentage}%
+                          </span>
+                          {!discount.isActive && (
+                            <span
+                              className={`rounded px-1 text-[10px] uppercase tracking-wide ${
+                                selected ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                              }`}
+                            >
+                              Inactive
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <input
-                    type="number"
-                    min="0"
-                    step="500"
-                    value={discountPrice}
-                    onChange={(e) => setDiscountPrice(parseFloat(e.target.value))}
-                    className="block w-full rounded-md border-gray-300 pl-8 focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none p-2 border bg-gray-50/50"
-                  />
-                </div>
+                )}
               </div>
 
               <div>

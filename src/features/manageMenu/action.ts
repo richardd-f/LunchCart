@@ -32,13 +32,25 @@ export interface SerializableMealOptionGroup {
   values: SerializableMealOptionValue[];
 }
 
+export interface SerializableMealDiscount {
+  id: string;
+  name: string;
+}
+
+// Option shown in the menu modal's discount selector.
+export type ShopDiscountOption = {
+  id: string;
+  name: string;
+  percentage: number;
+  isActive: boolean;
+};
+
 export interface SerializableMeal {
   id: string;
   shopId: string;
   name: string;
   description: string;
   price: number; // Changed from Decimal
-  discountPrice: number; // New field
   category: MealCategory;
   isAvailable: boolean;
   orderNumber: number;
@@ -46,6 +58,7 @@ export interface SerializableMeal {
   createdAt: Date;
   updatedAt: Date;
   images: MealImage[];
+  discounts: SerializableMealDiscount[];
   optionGroups: SerializableMealOptionGroup[];
 }
 
@@ -77,12 +90,12 @@ export type CreateMealInput = {
   name: string;
   description: string;
   price: number;
-  discountPrice: number;
   category: MealCategory;
   isAvailable: boolean;
   allowNotes: boolean;
   images: MealImageInput[];
   optionGroups: OptionGroupInput[];
+  discountIds: string[];
 };
 
 export type UpdateMealInput = Partial<CreateMealInput> & {
@@ -102,7 +115,81 @@ async function getOwnerShopId(userId: string): Promise<string | null> {
   return role?.shopId || null;
 }
 
+// Only allow attaching discounts that belong to this shop.
+async function filterShopDiscountIds(shopId: string, discountIds: string[]): Promise<string[]> {
+  if (!discountIds || discountIds.length === 0) return [];
+  const discounts = await prisma.discount.findMany({
+    where: { id: { in: discountIds }, shopId },
+    select: { id: true },
+  });
+  return discounts.map((d) => d.id);
+}
+
+// Shared shape + serializer so every action returns identical meal data.
+const mealInclude = {
+  images: { orderBy: { order: 'asc' } },
+  optionGroups: {
+    include: { values: { orderBy: { price: 'asc' } } },
+    orderBy: { createdAt: 'asc' },
+  },
+  discounts: { select: { id: true, name: true }, orderBy: { name: 'asc' } },
+} satisfies Prisma.MealInclude;
+
+type MealPayload = Prisma.MealGetPayload<{ include: typeof mealInclude }>;
+
+function serializeMeal(meal: MealPayload): SerializableMeal {
+  return {
+    id: meal.id,
+    shopId: meal.shopId,
+    name: meal.name,
+    description: meal.description,
+    price: Number(meal.price),
+    category: meal.category,
+    isAvailable: meal.isAvailable,
+    orderNumber: meal.orderNumber,
+    allowNotes: meal.allowNotes,
+    createdAt: meal.createdAt,
+    updatedAt: meal.updatedAt,
+    images: meal.images,
+    discounts: meal.discounts.map((d) => ({ id: d.id, name: d.name })),
+    optionGroups: meal.optionGroups.map((group) => ({
+      ...group,
+      values: group.values.map((val) => ({ ...val, price: Number(val.price) })),
+    })),
+  };
+}
+
 // --- Actions ---
+
+// Lightweight list of the shop's discounts for the menu modal's selector.
+export async function getShopDiscountsForSelect(): Promise<ActionResult<ShopDiscountOption[]>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+
+    const shopId = await getOwnerShopId(session.user.id);
+    if (!shopId) return { success: false, error: 'Shop not found' };
+
+    const discounts = await prisma.discount.findMany({
+      where: { shopId },
+      select: { id: true, name: true, percentage: true, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      success: true,
+      data: discounts.map((d) => ({
+        id: d.id,
+        name: d.name,
+        percentage: Number(d.percentage),
+        isActive: d.isActive,
+      })),
+    };
+  } catch (error) {
+    console.error('Error fetching shop discounts:', error);
+    return { success: false, error: 'Failed to fetch shop discounts' };
+  }
+}
 
 export async function getMeals(
   search?: string
@@ -126,38 +213,14 @@ export async function getMeals(
 
     const meals = await prisma.meal.findMany({
       where,
-      include: {
-        images: {
-          orderBy: { order: 'asc' }
-        },
-        optionGroups: {
-          include: {
-            values: { orderBy: { price: 'asc' } }
-          }, 
-          orderBy: { createdAt: 'asc' }
-        }
-      },
+      include: mealInclude,
       orderBy: [
         { orderNumber: 'asc' },
         { createdAt: 'asc' }
       ]
     });
 
-    // Serialize Decimals to numbers
-    const serializableMeals: SerializableMeal[] = meals.map(meal => ({
-      ...meal,
-      price: Number(meal.price),
-      discountPrice: Number(meal.discountPrice),
-      optionGroups: meal.optionGroups.map(group => ({
-        ...group,
-        values: group.values.map(val => ({
-          ...val,
-          price: Number(val.price)
-        }))
-      }))
-    }));
-
-    return { success: true, data: serializableMeals };
+    return { success: true, data: meals.map(serializeMeal) };
   } catch (error) {
     console.error('Error fetching meals:', error);
     return { success: false, error: 'Failed to fetch meals' };
@@ -172,6 +235,8 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
     const shopId = await getOwnerShopId(session.user.id);
     if (!shopId) return { success: false, error: 'Shop not found' };
 
+    const discountIds = await filterShopDiscountIds(shopId, data.discountIds);
+
     // Transaction to ensure atomic creation
     const meal = await prisma.$transaction(async (tx) => {
       // 1. Create Meal
@@ -184,6 +249,7 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
           category: data.category,
           isAvailable: data.isAvailable,
           allowNotes: data.allowNotes,
+          discounts: { connect: discountIds.map((id) => ({ id })) },
         }
       });
 
@@ -226,35 +292,15 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
       // Fetch the full meal with relations to return
       const fullMeal = await tx.meal.findUnique({
           where: { id: newMeal.id },
-          include: {
-              images: { orderBy: { order: 'asc' } },
-              optionGroups: {
-                  include: { values: { orderBy: { price: 'asc' } } },
-                  orderBy: { createdAt: 'asc' }
-              }
-          }
+          include: mealInclude,
       });
-      
+
       return fullMeal!;
     });
 
     revalidatePath('/manageMenu');
 
-    // Serialize
-    const serializableMeal: SerializableMeal = {
-        ...meal,
-        price: Number(meal.price),
-        discountPrice: Number(meal.discountPrice),
-        optionGroups: meal.optionGroups.map(g => ({
-            ...g,
-            values: g.values.map(v => ({
-                ...v,
-                price: Number(v.price)
-            }))
-        }))
-    };
-
-    return { success: true, data: serializableMeal };
+    return { success: true, data: serializeMeal(meal) };
   } catch (error) {
     console.error('Error creating meal:', error);
     return { success: false, error: 'Failed to create meal' };
@@ -274,6 +320,11 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
        return { success: false, error: 'Meal not found or unauthorized' };
     }
 
+    const discountIds =
+      data.discountIds !== undefined
+        ? await filterShopDiscountIds(shopId, data.discountIds)
+        : undefined;
+
     const updatedMeal = await prisma.$transaction(async (tx) => {
       // 1. Update basic fields
       await tx.meal.update({
@@ -282,10 +333,12 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
           name: data.name,
           description: data.description,
           price: data.price,
-          discountPrice: data.discountPrice,
           category: data.category,
           isAvailable: data.isAvailable,
           allowNotes: data.allowNotes,
+          ...(discountIds !== undefined
+            ? { discounts: { set: discountIds.map((id) => ({ id })) } }
+            : {}),
         }
       });
 
@@ -333,34 +386,14 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
       // Fetch full meal
       const fullMeal = await tx.meal.findUnique({
         where: { id: data.id },
-        include: {
-            images: { orderBy: { order: 'asc' } },
-            optionGroups: {
-                include: { values: { orderBy: { price: 'asc' } } },
-                orderBy: { createdAt: 'asc' }
-            }
-        }
+        include: mealInclude,
       });
       return fullMeal!;
     });
 
     revalidatePath('/manageMenu');
 
-    // Serialize
-    const serializableMeal: SerializableMeal = {
-        ...updatedMeal,
-        price: Number(updatedMeal.price),
-        discountPrice: Number(updatedMeal.discountPrice),
-        optionGroups: updatedMeal.optionGroups.map(g => ({
-            ...g,
-            values: g.values.map(v => ({
-                ...v,
-                price: Number(v.price)
-            }))
-        }))
-    };
-
-    return { success: true, data: serializableMeal };
+    return { success: true, data: serializeMeal(updatedMeal) };
   } catch (error) {
     console.error('Error updating meal:', error);
     return { success: false, error: 'Failed to update meal' };
@@ -405,32 +438,12 @@ export async function toggleMealAvailability(id: string): Promise<ActionResult<S
     const updated = await prisma.meal.update({
         where: { id },
         data: { isAvailable: !existingMeal.isAvailable },
-        include: {
-            images: { orderBy: { order: 'asc' } },
-            optionGroups: {
-                include: { values: { orderBy: { price: 'asc' } } },
-                orderBy: { createdAt: 'asc' }
-            }
-        }
+        include: mealInclude,
     });
 
     revalidatePath('/manageMenu');
 
-    // Serialize
-    const serializableMeal: SerializableMeal = {
-        ...updated,
-        price: Number(updated.price),
-        discountPrice: Number(updated.discountPrice),
-        optionGroups: updated.optionGroups.map(g => ({
-            ...g,
-            values: g.values.map(v => ({
-                ...v,
-                price: Number(v.price)
-            }))
-        }))
-    };
-
-    return { success: true, data: serializableMeal };
+    return { success: true, data: serializeMeal(updated) };
   } catch (error) {
     console.error('Error toggling meal:', error);
     return { success: false, error: 'Failed to toggle availability' };

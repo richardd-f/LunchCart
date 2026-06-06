@@ -1,10 +1,13 @@
-import { getMeals } from '@/features/manageMenu/action';
+import { getMeals, getShopDiscountsForSelect } from '@/features/manageMenu/action';
 import MenuDashboard from '@/features/manageMenu/components/MenuDashboard';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ManageMenuPage() {
-  const { data: meals, error } = await getMeals();
+  const [{ data: meals, error }, { data: shopDiscounts }] = await Promise.all([
+    getMeals(),
+    getShopDiscountsForSelect(),
+  ]);
 
   if (error) {
     throw new Error(error);
@@ -20,7 +23,7 @@ export default async function ManageMenuPage() {
             </div>
         </div>
 
-        <MenuDashboard initialMeals={meals || []} />
+        <MenuDashboard initialMeals={meals || []} shopDiscounts={shopDiscounts || []} />
       </div>
     </div>
   );

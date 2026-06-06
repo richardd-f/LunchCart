@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { MealCategory } from '@prisma/client';
-import { getMeals, MealWithRelations, updateMealOrder } from '../action';
+import { getMeals, MealWithRelations, updateMealOrder, ShopDiscountOption } from '../action';
 import MenuCard from './MenuCard';
 import MenuFormModal from './MenuFormModal';
 import {
@@ -25,9 +25,10 @@ import { toast } from 'react-toastify';
 
 interface MenuDashboardProps {
   initialMeals: MealWithRelations[];
+  shopDiscounts: ShopDiscountOption[];
 }
 
-export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
+export default function MenuDashboard({ initialMeals, shopDiscounts }: MenuDashboardProps) {
   const [meals, setMeals] = useState<MealWithRelations[]>(initialMeals);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<MealCategory | 'ALL'>('ALL');
@@ -281,6 +282,7 @@ export default function MenuDashboard({ initialMeals }: MenuDashboardProps) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         initialData={editingMeal}
+        shopDiscounts={shopDiscounts}
         onSuccess={handleModalSuccess}
       />
     </div>
