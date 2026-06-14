@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client"
 import { sendWhatsApp } from "@/lib/gowa"
+import { emitQueueUpdate } from "@/lib/queueEvents"
 import { revalidatePath } from "next/cache"
 
 // Types for filter parameters
@@ -349,6 +350,9 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
             data: { orderStatus: newStatus },
         })
     }
+
+    // A status change shifts everyone's live-queue position; notify open streams.
+    emitQueueUpdate(order.shopId, order.pickupLabel, order.pickupDate)
 
     // Send WhatsApp notification when order is READY for pickup
     if (newStatus === OrderStatus.READY && order.user?.phone) {

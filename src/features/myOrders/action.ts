@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { snap } from "@/lib/midtrans"
 import { OrderStatus } from "@prisma/client"
+import { emitQueueUpdate } from "@/lib/queueEvents"
 import { revalidatePath } from 'next/cache';
 
 export async function getMyOrders(statusFilter?: string) {
@@ -213,11 +214,14 @@ export async function cancelOrder(orderId: string) {
     // Update order status to CANCELLED
     await prisma.order.update({
         where: { id: orderId },
-        data: { 
+        data: {
             orderStatus: OrderStatus.CANCELLED,
             paymentStatus: "CANCELLED",
         },
     })
+
+    // Removing an order from the queue shifts everyone behind it.
+    emitQueueUpdate(order.shopId, order.pickupLabel, order.pickupDate)
 
     return { success: true }
 }

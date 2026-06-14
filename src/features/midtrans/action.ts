@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { PaymentStatus, OrderStatus } from "@prisma/client"
 import { sendWhatsApp } from "@/lib/gowa"
+import { emitQueueUpdate } from "@/lib/queueEvents"
 
 export async function updatePaymentStatus(
     midtransOrderId: string,
@@ -96,6 +97,9 @@ export async function updatePaymentStatus(
             data: dataToUpdate,
         })
         console.log(`Order ${order.id} updated to ${newPaymentStatus}`)
+
+        // Payment change alters queue membership (PAID enters, failure auto-cancels out).
+        emitQueueUpdate(order.shopId, order.pickupLabel, order.pickupDate)
 
         // Send WhatsApp notification to shop staff when payment is PAID
         if (newPaymentStatus === PaymentStatus.PAID) {
