@@ -11,7 +11,7 @@ export interface ShopOrderFilters {
     pickupDate?: string // ISO date string "YYYY-MM-DD" - single day filter
     mealIds?: string[] // Multi-select meal IDs
     optionNames?: string[] // Multi-select option names
-    statusFilter?: string // "All", "Pending", "Confirmed", "Ready", "Completed"
+    statusFilter?: string // "All", "Pending", "Ready", "Completed"
 }
 
 // Type for aggregated summary
@@ -61,7 +61,6 @@ export async function getShopOrders(filters: ShopOrderFilters = {}) {
     if (filters.statusFilter && filters.statusFilter !== "All") {
         const statusMap: Record<string, OrderStatus> = {
             "Pending": OrderStatus.PENDING,
-            "Confirmed": OrderStatus.CONFIRMED,
             "Ready": OrderStatus.READY,
             "Completed": OrderStatus.COMPLETED,
             "Cancelled": OrderStatus.CANCELLED,
@@ -151,7 +150,7 @@ export async function getOrderAggregation(filters: ShopOrderFilters = {}): Promi
     const orderWhereClause: Prisma.OrderWhereInput = {
         shopId,
         // Only aggregate orders that are actionable or need prep
-        orderStatus: { in: [OrderStatus.PENDING, OrderStatus.CONFIRMED] },
+        orderStatus: { in: [OrderStatus.PENDING] },
         paymentStatus: PaymentStatus.PAID, // Only count paid orders
     }
 
@@ -281,8 +280,7 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
 
     // Validate status transitions
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-        [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-        [OrderStatus.CONFIRMED]: [OrderStatus.READY, OrderStatus.CANCELLED],
+        [OrderStatus.PENDING]: [OrderStatus.READY, OrderStatus.CANCELLED],
         [OrderStatus.READY]: [OrderStatus.COMPLETED],
         [OrderStatus.COMPLETED]: [],
         [OrderStatus.CANCELLED]: [],
@@ -292,14 +290,15 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
         throw new Error(`Invalid status transition: ${order.orderStatus} -> ${newStatus}`)
     }
 
-    if (order.orderStatus === OrderStatus.PENDING && newStatus === OrderStatus.CONFIRMED) {
+    // A pending order can only be marked ready once payment has cleared
+    if (order.orderStatus === OrderStatus.PENDING && newStatus === OrderStatus.READY) {
         if (order.paymentStatus !== PaymentStatus.PAID) {
-            throw new Error("Cannot confirm order: Payment is not completed")
+            throw new Error("Cannot mark order as ready: Payment is not completed")
         }
     }
 
-    // Use transaction for CONFIRMED -> READY to also credit the shop wallet
-    if (order.orderStatus === OrderStatus.CONFIRMED && newStatus === OrderStatus.READY) {
+    // Use transaction for PENDING -> READY to also credit the shop wallet
+    if (order.orderStatus === OrderStatus.PENDING && newStatus === OrderStatus.READY) {
         await prisma.$transaction(async (tx) => {
             // Update order status
             await tx.order.update({

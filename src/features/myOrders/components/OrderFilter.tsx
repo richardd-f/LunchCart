@@ -5,7 +5,6 @@ import React from 'react'
 const FILTERS = [
     "All Orders",
     "Pending",
-    "Cooking",
     "Ready",
     "Completed",
     "Cancelled"

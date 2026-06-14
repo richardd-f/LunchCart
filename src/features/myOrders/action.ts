@@ -22,9 +22,6 @@ export async function getMyOrders(statusFilter?: string) {
             case "Pending":
                 whereClause.orderStatus = OrderStatus.PENDING
                 break
-            case "Cooking":
-                whereClause.orderStatus = OrderStatus.CONFIRMED
-                break
             case "Ready":
                 whereClause.orderStatus = OrderStatus.READY
                 break

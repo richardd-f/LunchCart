@@ -41,7 +41,6 @@ enum StaffRole {
 
 enum OrderStatus {
   PENDING
-  CONFIRMED
   READY
   CANCELLED
   COMPLETED

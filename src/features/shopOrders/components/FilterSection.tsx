@@ -15,7 +15,6 @@ interface FilterSectionProps {
 const STATUS_OPTIONS = [
     { value: "All", label: "All Statuses" },
     { value: "Pending", label: "Pending" },
-    { value: "Confirmed", label: "Confirmed (Cooking)" },
     { value: "Ready", label: "Ready for Pickup" },
     { value: "Completed", label: "Completed" },
 ]
