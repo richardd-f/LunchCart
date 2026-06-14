@@ -26,6 +26,7 @@ interface ShopProfileFormProps {
     pickupLabels: {
         id: string;
         label: string;
+        isLiveQueue: boolean;
     }[];
     orderScheduleMode: 'OFF' | 'ON';
     orderSchedules: {
@@ -77,10 +78,10 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
         ? initialData.pickupTimes.map((pt: any) => pt.time) 
         : ['12:00']
   );
-  const [pickupLabels, setPickupLabels] = useState<string[]>(
+  const [pickupLabels, setPickupLabels] = useState<{ label: string; isLiveQueue: boolean }[]>(
     initialData.pickupLabels && initialData.pickupLabels.length > 0
-        ? initialData.pickupLabels.map((pl: any) => pl.label)
-        : ['Lunch Break']
+        ? initialData.pickupLabels.map((pl: any) => ({ label: pl.label, isLiveQueue: pl.isLiveQueue ?? false }))
+        : [{ label: 'Lunch Break', isLiveQueue: false }]
   );
   const [isUsingTimePickup, setIsUsingTimePickup] = useState(initialData.isUsingTimePickup ?? true);
   const [showNewMenuSection, setShowNewMenuSection] = useState(initialData.showNewMenuSection ?? true);
@@ -110,7 +111,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
   };
 
   const addPickupLabel = () => {
-    setPickupLabels([...pickupLabels, '']);
+    setPickupLabels([...pickupLabels, { label: '', isLiveQueue: false }]);
   };
 
   const removePickupLabel = (index: number) => {
@@ -121,7 +122,13 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
 
   const updatePickupLabel = (index: number, value: string) => {
     const newLabels = [...pickupLabels];
-    newLabels[index] = value;
+    newLabels[index] = { ...newLabels[index], label: value };
+    setPickupLabels(newLabels);
+  };
+
+  const toggleLabelLiveQueue = (index: number) => {
+    const newLabels = [...pickupLabels];
+    newLabels[index] = { ...newLabels[index], isLiveQueue: !newLabels[index].isLiveQueue };
     setPickupLabels(newLabels);
   };
 
@@ -298,17 +305,29 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Pickup Time (e.g. "Lunch Break", "After School")
                 </label>
+                <p className="text-xs text-gray-500 mb-3">
+                  Tick "Live queue" to show customers a real-time queue number for that label.
+                </p>
                 <div className="space-y-3">
-                  {pickupLabels.map((label, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                  {pickupLabels.map((item, index) => (
+                    <div key={index} className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                       <input
                         type="text"
-                        value={label}
+                        value={item.label}
                         onChange={(e) => updatePickupLabel(index, e.target.value)}
                         placeholder="Enter label"
                         className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
                         required={!isUsingTimePickup}
                       />
+                      <label className="flex items-center gap-1.5 text-sm text-gray-600 whitespace-nowrap cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={item.isLiveQueue}
+                          onChange={() => toggleLabelLiveQueue(index)}
+                          className="h-4 w-4 rounded border-gray-300 text-[#F97352] focus:ring-[#F97352]"
+                        />
+                        Live queue
+                      </label>
                       {pickupLabels.length > 1 && (
                         <button
                           type="button"
@@ -335,9 +354,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                     Add Label
                   </button>
                 </div>
-                {pickupLabels.map((label, index) => (
-                  <input key={`hidden-label-${index}`} type="hidden" name="pickupLabels" value={label} />
-                ))}
+                <input type="hidden" name="pickupLabelsData" value={JSON.stringify(pickupLabels)} />
               </div>
             )}
 

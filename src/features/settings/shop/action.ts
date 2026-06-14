@@ -168,7 +168,19 @@ export async function updateShopProfile(
   const showNewMenuSection = formData.get('showNewMenuSection') === 'true';
   const isUsingTimePickup = formData.get('isUsingTimePickup') === 'true';
   const pickupTimes = formData.getAll('pickupTimes') as string[];
-  const pickupLabels = formData.getAll('pickupLabels') as string[];
+
+  // Pickup labels arrive as a JSON array of { label, isLiveQueue }
+  const pickupLabelsJson = formData.get('pickupLabelsData') as string;
+  let pickupLabels: { label: string; isLiveQueue: boolean }[] = [];
+  if (pickupLabelsJson) {
+    try {
+      pickupLabels = JSON.parse(pickupLabelsJson);
+    } catch (e) {
+      console.error('Failed to parse pickup labels JSON', e);
+    }
+  }
+  // Drop empty labels so blank rows are not persisted
+  pickupLabels = pickupLabels.filter((pl) => pl.label.trim().length > 0);
 
   // Order Schedule
   const orderScheduleMode = (formData.get('orderScheduleMode') as 'OFF' | 'ON') || 'OFF';
@@ -245,9 +257,10 @@ export async function updateShopProfile(
 
         if (!isUsingTimePickup && pickupLabels.length > 0) {
              await tx.pickupLabel.createMany({
-                 data: pickupLabels.map(label => ({
+                 data: pickupLabels.map(pl => ({
                      shopId: shopId,
-                     label,
+                     label: pl.label.trim(),
+                     isLiveQueue: pl.isLiveQueue,
                  }))
              });
         }
