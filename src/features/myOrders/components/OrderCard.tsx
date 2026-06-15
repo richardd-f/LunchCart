@@ -5,6 +5,7 @@ import Image from 'next/image'
 import QRCode from "react-qr-code"
 import { toast } from 'react-toastify';
 import { getMyOrders } from '../action'
+import LiveQueueWidget from '@/features/liveQueue/components/LiveQueueWidget'
 
 // Use the actual return type from getMyOrders (with Decimal converted to number)
 type OrderWithDetails = Awaited<ReturnType<typeof getMyOrders>>[number]
@@ -82,6 +83,11 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
                      </span>
                 </div>
             </div>
+
+            {/* Live Queue (only for live-queue labels, while order is active) */}
+            {order.isLiveQueueOrder && (order.orderStatus === 'PENDING' || order.orderStatus === 'READY') && (
+                <LiveQueueWidget orderId={order.id} />
+            )}
 
             {/* Content: Order Items */}
             <div className="p-4 flex-1">

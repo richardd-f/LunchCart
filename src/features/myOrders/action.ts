@@ -45,6 +45,10 @@ export async function getMyOrders(statusFilter?: string) {
                 select: {
                     name: true,
                     profileImage: true,
+                    pickupLabels: {
+                        where: { isLiveQueue: true },
+                        select: { label: true },
+                    },
                 },
             },
             orderItems: {
@@ -69,6 +73,10 @@ export async function getMyOrders(statusFilter?: string) {
     return orders.map(order => ({
         ...order,
         totalAmount: Number(order.totalAmount),
+        // Eligible for the live-queue widget when the order's label is a live-queue label.
+        isLiveQueueOrder:
+            !!order.pickupLabel &&
+            order.shop.pickupLabels.some((l) => l.label === order.pickupLabel),
         orderItems: order.orderItems.map(item => ({
             ...item,
             price: Number(item.price),

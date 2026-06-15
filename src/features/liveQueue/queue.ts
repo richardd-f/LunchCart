@@ -1,6 +1,3 @@
-"use server"
-
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
 
@@ -88,13 +85,4 @@ export async function computeQueueStatus(orderId: string, userId: string): Promi
         totalInQueue: group.length,
         yourStatus: order.orderStatus,
     }
-}
-
-/**
- * Authenticated wrapper for the customer's own order.
- */
-export async function getQueueStatus(orderId: string): Promise<QueueStatus | null> {
-    const session = await auth()
-    if (!session?.user?.id) return null
-    return computeQueueStatus(orderId, session.user.id)
 }
