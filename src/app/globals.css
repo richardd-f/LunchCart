@@ -25,6 +25,12 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* react-toastify: replace the default-type rainbow progress bar with the brand color.
+   Typed toasts (success/error/info/warning) keep their own colors. */
+:root {
+  --toastify-color-progress-light: #F97352;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
