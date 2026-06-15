@@ -4,10 +4,11 @@ import React, { useEffect, useState, useCallback, useTransition } from 'react'
 import FilterSection from './FilterSection'
 import OrderSummary from './OrderSummary'
 import ShopOrderCard from './ShopOrderCard'
-import { getShopOrders, getOrderAggregation, getShopMeals, ShopOrderFilters, OrderAggregation } from '../action'
+import { getShopOrders, getOrderAggregation, getShopMeals, getShopPickupConfig, ShopOrderFilters, OrderAggregation } from '../action'
 
 type OrderWithDetails = Awaited<ReturnType<typeof getShopOrders>>[number]
 type Meal = Awaited<ReturnType<typeof getShopMeals>>[number]
+type PickupConfig = Awaited<ReturnType<typeof getShopPickupConfig>>
 
 export default function ShopOrderList() {
     const [filters, setFilters] = useState<ShopOrderFilters>({
@@ -16,15 +17,20 @@ export default function ShopOrderList() {
     const [orders, setOrders] = useState<OrderWithDetails[]>([])
     const [aggregations, setAggregations] = useState<OrderAggregation[]>([])
     const [meals, setMeals] = useState<Meal[]>([])
+    const [pickupConfig, setPickupConfig] = useState<PickupConfig | undefined>(undefined)
     const [isLoading, startTransition] = useTransition()
     const [isLoadingMeals, setIsLoadingMeals] = useState(true)
 
-    // Fetch meals for filter dropdown (once)
+    // Fetch meals + pickup config for filter dropdowns (once)
     useEffect(() => {
         getShopMeals()
             .then(setMeals)
             .catch(console.error)
             .finally(() => setIsLoadingMeals(false))
+
+        getShopPickupConfig()
+            .then(setPickupConfig)
+            .catch(console.error)
     }, [])
 
     // Fetch orders and aggregations when filters change
@@ -57,11 +63,12 @@ export default function ShopOrderList() {
     return (
         <div className="space-y-6">
             {/* Filter Section */}
-            <FilterSection 
-                filters={filters} 
-                onFiltersChange={handleFiltersChange} 
+            <FilterSection
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
                 meals={meals}
                 isLoadingMeals={isLoadingMeals}
+                pickupConfig={pickupConfig}
             />
 
             {/* Order Summary (Aggregation) - Shown when filtered by date or specific items */}

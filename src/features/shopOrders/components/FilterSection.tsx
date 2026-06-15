@@ -5,11 +5,19 @@ import { ShopOrderFilters, getShopMeals } from '../action'
 
 type Meal = Awaited<ReturnType<typeof getShopMeals>>[number]
 
+interface PickupConfig {
+    isUsingTimePickup: boolean
+    fixedTimePickup: boolean
+    pickupTimes: string[]
+    pickupLabels: string[]
+}
+
 interface FilterSectionProps {
     filters: ShopOrderFilters
     onFiltersChange: (filters: ShopOrderFilters) => void
     meals: Meal[]
     isLoadingMeals?: boolean
+    pickupConfig?: PickupConfig
 }
 
 const STATUS_OPTIONS = [
@@ -19,7 +27,7 @@ const STATUS_OPTIONS = [
     { value: "Completed", label: "Completed" },
 ]
 
-export default function FilterSection({ filters, onFiltersChange, meals, isLoadingMeals }: FilterSectionProps) {
+export default function FilterSection({ filters, onFiltersChange, meals, isLoadingMeals, pickupConfig }: FilterSectionProps) {
     const [showMealDropdown, setShowMealDropdown] = useState(false)
     const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set())
 
@@ -33,6 +41,14 @@ export default function FilterSection({ filters, onFiltersChange, meals, isLoadi
 
     const handleStatusChange = (value: string) => {
         onFiltersChange({ ...filters, statusFilter: value === "All" ? undefined : value })
+    }
+
+    const handlePickupTimeChange = (value: string) => {
+        onFiltersChange({ ...filters, pickupTime: value || undefined })
+    }
+
+    const handlePickupLabelChange = (value: string) => {
+        onFiltersChange({ ...filters, pickupLabel: value || undefined })
     }
 
     const handleMealToggle = (mealId: string) => {
@@ -99,7 +115,7 @@ export default function FilterSection({ filters, onFiltersChange, meals, isLoadi
         onFiltersChange({})
     }
 
-    const hasActiveFilters = filters.pickupDate || (filters.mealIds && filters.mealIds.length > 0) || filters.statusFilter || (filters.optionNames && filters.optionNames.length > 0)
+    const hasActiveFilters = filters.pickupDate || filters.pickupTime || filters.pickupLabel || (filters.mealIds && filters.mealIds.length > 0) || filters.statusFilter || (filters.optionNames && filters.optionNames.length > 0)
 
     const selectedMealCount = filters.mealIds?.length || 0
     const selectedOptionCount = filters.optionNames?.length || 0
@@ -163,6 +179,48 @@ export default function FilterSection({ filters, onFiltersChange, meals, isLoadi
                         )}
                     </div>
                 </div>
+
+                {/* Pickup Time / Label Filter (depends on shop pickup mode) */}
+                {pickupConfig && (
+                    pickupConfig.isUsingTimePickup ? (
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Pickup Time</label>
+                            {pickupConfig.pickupTimes.length > 0 ? (
+                                <select
+                                    value={filters.pickupTime || ""}
+                                    onChange={(e) => handlePickupTimeChange(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none transition-all"
+                                >
+                                    <option value="">All Times</option>
+                                    {pickupConfig.pickupTimes.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="time"
+                                    value={filters.pickupTime || ""}
+                                    onChange={(e) => handlePickupTimeChange(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none transition-all"
+                                />
+                            )}
+                        </div>
+                    ) : (
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Pickup Label</label>
+                            <select
+                                value={filters.pickupLabel || ""}
+                                onChange={(e) => handlePickupLabelChange(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none transition-all"
+                            >
+                                <option value="">All Labels</option>
+                                {pickupConfig.pickupLabels.map((l) => (
+                                    <option key={l} value={l}>{l}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )
+                )}
 
                 {/* Multi-Select Menu Item Filter with Nested Options */}
                 <div className="relative">

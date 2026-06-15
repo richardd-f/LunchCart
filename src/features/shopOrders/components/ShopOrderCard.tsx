@@ -114,6 +114,9 @@ export default function ShopOrderCard({ order, onStatusChange }: ShopOrderCardPr
                     </svg>
                     <span className="text-xs font-medium text-blue-700">
                         Pickup: {new Date(order.pickupDate).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                        {order.pickupLabel
+                            ? ` · ${order.pickupLabel}`
+                            : ` · ${new Date(order.pickupDate).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`}
                     </span>
                 </div>
             )}

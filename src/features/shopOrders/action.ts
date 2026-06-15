@@ -10,9 +10,18 @@ import { revalidatePath } from "next/cache"
 // Types for filter parameters
 export interface ShopOrderFilters {
     pickupDate?: string // ISO date string "YYYY-MM-DD" - single day filter
+    pickupTime?: string // "HH:MM" - time-pickup slot filter
+    pickupLabel?: string // label-pickup filter (exact label match)
     mealIds?: string[] // Multi-select meal IDs
     optionNames?: string[] // Multi-select option names
     statusFilter?: string // "All", "Pending", "Ready", "Completed"
+}
+
+// Format a stored pickup timestamp to its "HH:MM" slot (server-local, matching how orders are created).
+function formatPickupTime(date: Date): string {
+    const hh = String(date.getHours()).padStart(2, "0")
+    const mm = String(date.getMinutes()).padStart(2, "0")
+    return `${hh}:${mm}`
 }
 
 // Type for aggregated summary
@@ -84,6 +93,11 @@ export async function getShopOrders(filters: ShopOrderFilters = {}) {
         }
     }
 
+    // Label-pickup filter (exact label match, column-level)
+    if (filters.pickupLabel) {
+        whereClause.pickupLabel = filters.pickupLabel
+    }
+
     // Meal filter - applied via orderItems (multi-select)
     if (filters.mealIds && filters.mealIds.length > 0) {
         whereClause.orderItems = {
@@ -123,8 +137,14 @@ export async function getShopOrders(filters: ShopOrderFilters = {}) {
         },
     })
 
+    // Time-pickup slot filter (the slot lives inside the pickupDate timestamp,
+    // so it is applied in memory after fetching).
+    const filteredOrders = filters.pickupTime
+        ? orders.filter(o => o.pickupDate && formatPickupTime(o.pickupDate) === filters.pickupTime)
+        : orders
+
     // Convert Decimal types to numbers
-    return orders.map(order => ({
+    return filteredOrders.map(order => ({
         ...order,
         totalAmount: Number(order.totalAmount),
         orderItems: order.orderItems.map(item => ({
@@ -153,6 +173,10 @@ export async function getOrderAggregation(filters: ShopOrderFilters = {}): Promi
         // Only aggregate orders that are actionable or need prep
         orderStatus: { in: [OrderStatus.PENDING] },
         paymentStatus: PaymentStatus.PAID, // Only count paid orders
+    }
+
+    if (filters.pickupLabel) {
+        orderWhereClause.pickupLabel = filters.pickupLabel
     }
 
     // Pickup date filter
@@ -251,6 +275,33 @@ export async function getShopMeals() {
     })
 
     return meals
+}
+
+/**
+ * Get the shop's pickup configuration for building order filters.
+ */
+export async function getShopPickupConfig() {
+    const shopId = await getUserShopId()
+    if (!shopId) {
+        throw new Error("Unauthorized: You must be a shop owner or staff")
+    }
+
+    const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        select: {
+            isUsingTimePickup: true,
+            fixedTimePickup: true,
+            pickupTimes: { select: { time: true }, orderBy: { time: "asc" } },
+            pickupLabels: { select: { label: true } },
+        },
+    })
+
+    return {
+        isUsingTimePickup: shop?.isUsingTimePickup ?? true,
+        fixedTimePickup: shop?.fixedTimePickup ?? false,
+        pickupTimes: shop?.pickupTimes.map(t => t.time) ?? [],
+        pickupLabels: shop?.pickupLabels.map(l => l.label) ?? [],
+    }
 }
 
 /**
