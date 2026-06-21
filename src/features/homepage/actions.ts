@@ -30,7 +30,10 @@ export async function getHomepageData(searchQuery?: string): Promise<ActionResul
                 isPrimary: true,
               }
             },
-            discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
+            discounts: {
+              where: { isActive: true },
+              select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
+            },
           },
           take: 10,
         }

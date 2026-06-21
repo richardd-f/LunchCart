@@ -2,6 +2,7 @@ import Link from 'next/link';
 import React from 'react';
 import { MenuCard } from './MenuCard';
 import { Reveal } from '@/components/Reveal';
+import { MealDiscountPreview } from '@/features/discounts/getMealDiscountPreview';
 
 interface ShopSectionProps {
   shopId: string;
@@ -11,6 +12,7 @@ interface ShopSectionProps {
     name: string;
     price: number | string;
     hasActiveDiscount?: boolean;
+    discountPreview?: MealDiscountPreview | null;
     images: Array<{ imagePath: string }>;
   }>;
 }
@@ -48,6 +50,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
                 name={meal.name}
                 price={meal.price.toString()}
                 hasActiveDiscount={meal.hasActiveDiscount}
+                discountPreview={meal.discountPreview}
                 imageUrl={meal.images[0]?.imagePath}
               />
             </Link>
@@ -65,6 +68,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
                   name={meal.name}
                   price={meal.price.toString()}
                   hasActiveDiscount={meal.hasActiveDiscount}
+                  discountPreview={meal.discountPreview}
                   imageUrl={meal.images[0]?.imagePath}
                 />
               </Link>

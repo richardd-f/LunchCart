@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { Meal, MealCategory, MealOptionValue } from '@prisma/client'
+import { getMealDiscountPreview, MealDiscountPreview } from '@/features/discounts/getMealDiscountPreview'
 
 // -- Types --
 export interface AddToCartInput {
@@ -20,6 +21,7 @@ export interface MealWithDetails {
     description: string
     price: number
     hasActiveDiscount: boolean
+    discountPreview: MealDiscountPreview | null
     // category: "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE"
     category: MealCategory
     isAvailable: boolean
@@ -69,7 +71,10 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
             images: {
                 orderBy: { order: 'asc' }
             },
-            discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
+            discounts: {
+                where: { isActive: true },
+                select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
+            },
             shop: {
                 select: {
                     id: true,
@@ -116,10 +121,19 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
 
     // Manually map to plain object to handle Decimal -> Number conversion
     const { discountPrice: _omitDiscountPrice, discounts, ...rest } = meal;
+    const price = Number(meal.price);
     return {
         ...rest,
-        price: Number(meal.price),
+        price,
         hasActiveDiscount: discounts.length > 0,
+        discountPreview: getMealDiscountPreview(
+            price,
+            discounts.map((d) => ({
+                percentage: Number(d.percentage),
+                minOrderSubtotal: Number(d.minOrderSubtotal),
+                maxDiscountAmount: Number(d.maxDiscountAmount),
+            }))
+        ),
         allowNotes: meal.allowNotes,
         category: meal.category as "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE",
         optionGroups: meal.optionGroups.map(group => ({

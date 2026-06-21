@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { ActionResult } from "@/types/ActionResult";
 import { Shop, MealCategory } from "@prisma/client";
+import { getMealDiscountPreview, MealDiscountPreview } from "@/features/discounts/getMealDiscountPreview";
 
 export type ShopDetails = Shop;
 
@@ -14,6 +15,7 @@ export type ShopMenuWithImages = {
   description: string;
   price: number; // Converted from Decimal
   hasActiveDiscount: boolean;
+  discountPreview: MealDiscountPreview | null;
   category: MealCategory;
   isAvailable: boolean;
   createdAt: Date;
@@ -59,7 +61,10 @@ export async function getShopMenus(
           select: { imagePath: true, isPrimary: true },
           orderBy: { isPrimary: 'desc' }
         },
-        discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
+        discounts: {
+          where: { isActive: true },
+          select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
+        },
       },
       orderBy: [
         { orderNumber: 'asc' },
@@ -70,10 +75,19 @@ export async function getShopMenus(
     // Convert Decimal to number for serialization
     const serializedMenus: ShopMenuWithImages[] = menus.map((menu) => {
       const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
+      const price = Number(menu.price);
       return {
         ...rest,
-        price: Number(menu.price),
+        price,
         hasActiveDiscount: discounts.length > 0,
+        discountPreview: getMealDiscountPreview(
+          price,
+          discounts.map((d) => ({
+            percentage: Number(d.percentage),
+            minOrderSubtotal: Number(d.minOrderSubtotal),
+            maxDiscountAmount: Number(d.maxDiscountAmount),
+          }))
+        ),
       };
     });
 
@@ -97,7 +111,10 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
                     select: { imagePath: true, isPrimary: true },
                     orderBy: { isPrimary: 'desc' }
                 },
-                discounts: { where: { isActive: true }, select: { id: true }, take: 1 },
+                discounts: {
+                    where: { isActive: true },
+                    select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
+                },
             },
             orderBy: {
                 createdAt: 'desc',
@@ -108,10 +125,19 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
         // Convert Decimal to number for serialization
         const serializedMenus: ShopMenuWithImages[] = newMenus.map((menu) => {
             const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
+            const price = Number(menu.price);
             return {
                 ...rest,
-                price: Number(menu.price),
+                price,
                 hasActiveDiscount: discounts.length > 0,
+                discountPreview: getMealDiscountPreview(
+                    price,
+                    discounts.map((d) => ({
+                        percentage: Number(d.percentage),
+                        minOrderSubtotal: Number(d.minOrderSubtotal),
+                        maxDiscountAmount: Number(d.maxDiscountAmount),
+                    }))
+                ),
             };
         });
 

@@ -57,16 +57,30 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">{meal.name}</h1>
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            {meal.discountPreview ? (
+                                <div className="space-y-1">
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                        <p className="text-2xl font-bold text-[#F97352]">
+                                            Rp {meal.discountPreview.finalPrice.toLocaleString('id-ID')}
+                                        </p>
+                                        <p className="text-base font-medium text-gray-400 line-through">
+                                            Rp {meal.discountPreview.originalPrice.toLocaleString('id-ID')}
+                                        </p>
+                                        <span className="rounded-full bg-[#F97352]/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#F97352]">
+                                            {meal.discountPreview.percentage}% OFF
+                                        </span>
+                                    </div>
+                                    {meal.discountPreview.minOrderSubtotal > 0 && (
+                                        <p className="text-xs text-gray-500">
+                                            Min. order Rp {meal.discountPreview.minOrderSubtotal.toLocaleString('id-ID')} to apply this discount
+                                        </p>
+                                    )}
+                                </div>
+                            ) : (
                                 <p className="text-2xl font-bold text-[#F97352]">
                                     Rp {Number(meal.price).toLocaleString('id-ID')}
                                 </p>
-                                {meal.hasActiveDiscount && (
-                                    <span className="rounded-full bg-[#F97352]/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-[#F97352]">
-                                        Promo
-                                    </span>
-                                )}
-                            </div>
+                            )}
                              <div className="mt-1 flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${meal.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                     {meal.isAvailable ? 'Available' : 'Unavailable'}

@@ -1,4 +1,4 @@
-import { Meal, MealImage, Shop } from "@prisma/client";
+import { Meal, MealImage, Shop, Prisma } from "@prisma/client";
 
 
 export interface ShopWithMeals extends Shop{
@@ -7,5 +7,10 @@ export interface ShopWithMeals extends Shop{
 
 export interface MealWithImages extends Meal{
     images: MealImage[];
-    discounts: { id: string }[];
+    discounts: {
+        id: string;
+        percentage: Prisma.Decimal;
+        minOrderSubtotal: Prisma.Decimal;
+        maxDiscountAmount: Prisma.Decimal;
+    }[];
 }

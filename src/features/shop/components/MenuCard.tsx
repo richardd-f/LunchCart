@@ -12,11 +12,14 @@ export function MenuCard({ menu }: MenuCardProps) {
   const primaryImage = menu.images.find(img => img.isPrimary)?.imagePath || menu.images[0]?.imagePath;
 
   // Format price to IDR
-  const formattedPrice = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(Number(menu.price));
+  const formatIDR = (amount: number) =>
+    new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(amount);
+
+  const formattedPrice = formatIDR(Number(menu.price));
 
   return (
     <Link href={`/menu/${menu.id}`} className="group block h-full">
@@ -44,10 +47,10 @@ export function MenuCard({ menu }: MenuCardProps) {
           </div>
 
           {/* Promo Badge */}
-          {menu.hasActiveDiscount && (
+          {menu.discountPreview && (
             <div className="absolute top-2 right-2">
               <span className="px-2 py-1 bg-[#F97352] text-[10px] uppercase font-bold tracking-wider rounded-md text-white shadow-sm">
-                Promo
+                {menu.discountPreview.percentage}% OFF
               </span>
             </div>
           )}
@@ -63,9 +66,20 @@ export function MenuCard({ menu }: MenuCardProps) {
           </p>
           
           <div className="flex items-end justify-between mt-auto pt-3 border-t border-gray-50">
-             <span className="font-bold text-gray-900 text-lg">
-                {formattedPrice}
-             </span>
+             {menu.discountPreview ? (
+                <div className="flex flex-col leading-tight">
+                   <span className="text-xs font-medium text-gray-400 line-through">
+                      {formatIDR(menu.discountPreview.originalPrice)}
+                   </span>
+                   <span className="font-bold text-[#F97352] text-lg">
+                      {formatIDR(menu.discountPreview.finalPrice)}
+                   </span>
+                </div>
+             ) : (
+                <span className="font-bold text-gray-900 text-lg">
+                   {formattedPrice}
+                </span>
+             )}
 
              <MenuCardAddButton mealId={menu.id} />
           </div>

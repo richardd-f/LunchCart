@@ -1,4 +1,5 @@
 import { getHomepageData } from '@/features/homepage/actions';
+import { getMealDiscountPreview } from '@/features/discounts/getMealDiscountPreview';
 import { SearchBar } from '@/features/homepage/components/SearchBar';
 import { ShopSection } from '@/features/homepage/components/ShopSection';
 import { Reveal } from '@/components/Reveal';
@@ -83,6 +84,14 @@ export default async function Home({ searchParams }: HomeProps) {
               name: m.name,
               price: Number(m.price),
               hasActiveDiscount: m.discounts.length > 0,
+              discountPreview: getMealDiscountPreview(
+                Number(m.price),
+                m.discounts.map((d) => ({
+                  percentage: Number(d.percentage),
+                  minOrderSubtotal: Number(d.minOrderSubtotal),
+                  maxDiscountAmount: Number(d.maxDiscountAmount),
+                }))
+              ),
               images: m.images,
             }))}
           />

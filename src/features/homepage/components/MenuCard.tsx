@@ -1,14 +1,16 @@
 import Image from 'next/image';
 import React from 'react';
+import { MealDiscountPreview } from '@/features/discounts/getMealDiscountPreview';
 
 interface MenuCardProps {
   name: string;
   price: number | string;
   hasActiveDiscount?: boolean;
+  discountPreview?: MealDiscountPreview | null;
   imageUrl?: string | null;
 }
 
-export function MenuCard({ name, price, hasActiveDiscount, imageUrl }: MenuCardProps) {
+export function MenuCard({ name, price, hasActiveDiscount, discountPreview, imageUrl }: MenuCardProps) {
   // Format price helper
   const formatPrice = (amount: number | string) => {
     return new Intl.NumberFormat('id-ID', {
@@ -38,9 +40,9 @@ export function MenuCard({ name, price, hasActiveDiscount, imageUrl }: MenuCardP
           </div>
         )}
 
-        {hasActiveDiscount && (
+        {(discountPreview || hasActiveDiscount) && (
           <span className="absolute left-2 top-2 rounded-full bg-[#F97352] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
-            Promo
+            {discountPreview ? `${discountPreview.percentage}% OFF` : 'Promo'}
           </span>
         )}
       </div>
@@ -50,7 +52,18 @@ export function MenuCard({ name, price, hasActiveDiscount, imageUrl }: MenuCardP
           {name}
         </h3>
 
-        <p className="mt-1 text-sm font-bold text-[#F97352] md:text-lg">{formattedPrice}</p>
+        {discountPreview ? (
+          <div className="mt-1 flex flex-col leading-tight">
+            <span className="text-[11px] font-medium text-gray-400 line-through md:text-xs">
+              {formatPrice(discountPreview.originalPrice)}
+            </span>
+            <span className="text-sm font-bold text-[#F97352] md:text-lg">
+              {formatPrice(discountPreview.finalPrice)}
+            </span>
+          </div>
+        ) : (
+          <p className="mt-1 text-sm font-bold text-[#F97352] md:text-lg">{formattedPrice}</p>
+        )}
       </div>
     </div>
   );

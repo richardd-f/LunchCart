@@ -122,12 +122,17 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                     {/* Header Info */}
                     <div>
                         <h3 className="font-semibold text-gray-800">{meal.name}</h3>
-                        <div className="flex items-center gap-2">
-                            <p className="text-[#F97352] font-bold">Rp {Number(meal.price).toLocaleString('id-ID')}</p>
-                            {meal.hasActiveDiscount && (
-                                <span className="rounded-full bg-[#F97352]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F97352]">
-                                    Promo
-                                </span>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {meal.discountPreview ? (
+                                <>
+                                    <p className="text-[#F97352] font-bold">Rp {meal.discountPreview.finalPrice.toLocaleString('id-ID')}</p>
+                                    <p className="text-sm font-medium text-gray-400 line-through">Rp {meal.discountPreview.originalPrice.toLocaleString('id-ID')}</p>
+                                    <span className="rounded-full bg-[#F97352]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F97352]">
+                                        {meal.discountPreview.percentage}% OFF
+                                    </span>
+                                </>
+                            ) : (
+                                <p className="text-[#F97352] font-bold">Rp {Number(meal.price).toLocaleString('id-ID')}</p>
                             )}
                         </div>
                     </div>
