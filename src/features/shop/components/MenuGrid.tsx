@@ -1,25 +1,94 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { ShopMenuWithImages } from '../actions';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { ShopMenuWithImages, getShopMenusPage } from '../actions';
+import { MENU_PAGE_SIZE } from '../pagination';
 import { MenuCard } from './MenuCard';
 import { MealCategory } from '@prisma/client';
 import { Reveal } from '@/components/Reveal';
 
 interface MenuGridProps {
-  menus: ShopMenuWithImages[];
+  shopId: string;
+  initialMenus: ShopMenuWithImages[];
+  initialHasMore: boolean;
   /** Play the first row on mount instead of on scroll (when this is the first food section). */
   immediateFirstRow?: boolean;
 }
 
-export function MenuGrid({ menus, immediateFirstRow = false }: MenuGridProps) {
+export function MenuGrid({
+  shopId,
+  initialMenus,
+  initialHasMore,
+  immediateFirstRow = false,
+}: MenuGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<MealCategory | 'ALL'>('ALL');
+  const [menus, setMenus] = useState<ShopMenuWithImages[]>(initialMenus);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [isSwitching, setIsSwitching] = useState(false); // category change (list reset)
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Filter menus based on selection
-  const filteredMenus = useMemo(() => {
-    if (selectedCategory === 'ALL') return menus;
-    return menus.filter(menu => menu.category === selectedCategory);
-  }, [menus, selectedCategory]);
+  // Bumped on every fetch so late responses from a previous category are ignored.
+  const requestIdRef = useRef(0);
+
+  const loadPage = useCallback(
+    async (category: MealCategory | 'ALL', offset: number, append: boolean) => {
+      const requestId = ++requestIdRef.current;
+      if (append) setIsLoadingMore(true);
+      else setIsSwitching(true);
+
+      const result = await getShopMenusPage(shopId, {
+        category: category === 'ALL' ? undefined : category,
+        offset,
+        take: MENU_PAGE_SIZE,
+      });
+
+      if (requestId !== requestIdRef.current) return; // stale response
+
+      if (result.success && result.data) {
+        const page = result.data;
+        setMenus((prev) => {
+          if (!append) return page.menus;
+          // Offset pagination can overlap if the list changed server-side; drop dupes.
+          const seen = new Set(prev.map((m) => m.id));
+          return [...prev, ...page.menus.filter((m) => !seen.has(m.id))];
+        });
+        setHasMore(page.hasMore);
+      }
+      setIsSwitching(false);
+      setIsLoadingMore(false);
+    },
+    [shopId]
+  );
+
+  const handleCategoryChange = (category: MealCategory | 'ALL') => {
+    if (category === selectedCategory) return;
+    setSelectedCategory(category);
+    setMenus([]);
+    setHasMore(false);
+    loadPage(category, 0, false);
+  };
+
+  // Keep the latest load-more logic in a ref so the observer is created once.
+  const loadMoreRef = useRef<() => void>(() => {});
+  loadMoreRef.current = () => {
+    if (!hasMore || isSwitching || isLoadingMore) return;
+    loadPage(selectedCategory, menus.length, true);
+  };
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreRef.current();
+      },
+      // ~one card-row ahead: the next page is fetched before the user reaches the end.
+      { rootMargin: '300px 0px' }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   // Categories available in the data (plus hardcoded standard ones if you prefer, or dynamic)
   // Let's use standard enum values
@@ -38,7 +107,7 @@ export function MenuGrid({ menus, immediateFirstRow = false }: MenuGridProps) {
           {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setSelectedCategory(cat)}
+              onClick={() => handleCategoryChange(cat)}
               className={`
                 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all
                 ${selectedCategory === cat
@@ -52,9 +121,9 @@ export function MenuGrid({ menus, immediateFirstRow = false }: MenuGridProps) {
         </div>
       </div>
 
-      {filteredMenus.length > 0 ? (
+      {menus.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
-          {filteredMenus.map((menu, i) => (
+          {menus.map((menu, i) => (
             <Reveal
               key={menu.id}
               delay={(i % 8) * 0.04}
@@ -65,9 +134,21 @@ export function MenuGrid({ menus, immediateFirstRow = false }: MenuGridProps) {
             </Reveal>
           ))}
         </div>
+      ) : isSwitching ? (
+        <div className="flex justify-center py-20">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#F97352] border-t-transparent" />
+        </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 py-20 text-center backdrop-blur-sm">
           <p className="text-gray-500">No items found in this category.</p>
+        </div>
+      )}
+
+      {/* Infinite-scroll sentinel + loading indicator */}
+      <div ref={sentinelRef} aria-hidden="true" />
+      {isLoadingMore && (
+        <div className="flex justify-center py-6">
+          <div className="h-6 w-6 animate-spin rounded-full border-4 border-[#F97352] border-t-transparent" />
         </div>
       )}
     </section>

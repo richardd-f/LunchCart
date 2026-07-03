@@ -41,19 +41,50 @@ export async function getShopDetails(shopId: string): Promise<ActionResult<ShopD
   }
 }
 
-export async function getShopMenus(
-  shopId: string,
-  category?: MealCategory
-): Promise<ActionResult<ShopMenuWithImages[]>> {
-  try {
-    const whereClause: any = {
-      shopId,
-      isAvailable: true,
-    };
+// Shared shape returned by the meal queries below (Decimal price + discounts included).
+type ShopMenuPayload = {
+  discountPrice: unknown;
+  price: unknown;
+  discounts: {
+    id: string;
+    percentage: unknown;
+    minOrderSubtotal: unknown;
+    maxDiscountAmount: unknown;
+  }[];
+} & Record<string, unknown>;
 
-    if (category) {
-      whereClause.category = category;
-    }
+// Convert Decimal to number for serialization and compute the discount preview.
+function serializeShopMenu(menu: ShopMenuPayload): ShopMenuWithImages {
+  const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
+  const price = Number(menu.price);
+  return {
+    ...(rest as unknown as Omit<ShopMenuWithImages, 'price' | 'hasActiveDiscount' | 'discountPreview'>),
+    price,
+    hasActiveDiscount: discounts.length > 0,
+    discountPreview: getMealDiscountPreview(
+      price,
+      discounts.map((d) => ({
+        percentage: Number(d.percentage),
+        minOrderSubtotal: Number(d.minOrderSubtotal),
+        maxDiscountAmount: Number(d.maxDiscountAmount),
+      }))
+    ),
+  };
+}
+
+export type ShopMenuPage = {
+  menus: ShopMenuWithImages[];
+  hasMore: boolean;
+};
+
+export async function getShopMenusPage(
+  shopId: string,
+  options?: { category?: MealCategory; offset?: number; take?: number }
+): Promise<ActionResult<ShopMenuPage>> {
+  try {
+    const category = options?.category;
+    const offset = Math.max(0, options?.offset ?? 0);
+    const take = Math.min(Math.max(1, options?.take ?? 8), 24);
 
     // Resolve "today" in the shop's timezone for the discount day-schedule.
     const shop = await prisma.shop.findUnique({
@@ -62,8 +93,13 @@ export async function getShopMenus(
     });
     const today = getTodayName(shop?.timezone ?? 'Asia/Jakarta');
 
-    const menus = await prisma.meal.findMany({
-      where: whereClause,
+    // Fetch one extra row: if it exists there is at least one more page.
+    const rows = await prisma.meal.findMany({
+      where: {
+        shopId,
+        isAvailable: true,
+        ...(category ? { category } : {}),
+      },
       include: {
         images: {
           select: { imagePath: true, isPrimary: true },
@@ -78,29 +114,14 @@ export async function getShopMenus(
         { orderNumber: 'asc' },
         { createdAt: 'asc' }
       ],
+      skip: offset,
+      take: take + 1,
     });
 
-    // Convert Decimal to number for serialization
-    const serializedMenus: ShopMenuWithImages[] = menus.map((menu) => {
-      const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
-      const price = Number(menu.price);
-      return {
-        ...rest,
-        price,
-        hasActiveDiscount: discounts.length > 0,
-        discountPreview: getMealDiscountPreview(
-          price,
-          discounts.map((d) => ({
-            percentage: Number(d.percentage),
-            minOrderSubtotal: Number(d.minOrderSubtotal),
-            maxDiscountAmount: Number(d.maxDiscountAmount),
-          }))
-        ),
-      };
-    });
+    const hasMore = rows.length > take;
+    const menus = rows.slice(0, take).map(serializeShopMenu);
 
-    return { success: true, data: serializedMenus };
-    
+    return { success: true, data: { menus, hasMore } };
   } catch (error) {
     console.error("Error fetching shop menus:", error);
     return { success: false, error: "Failed to fetch menus" };
@@ -136,26 +157,7 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
             take: limit,
         });
 
-        // Convert Decimal to number for serialization
-        const serializedMenus: ShopMenuWithImages[] = newMenus.map((menu) => {
-            const { discountPrice: _omitDiscountPrice, discounts, ...rest } = menu;
-            const price = Number(menu.price);
-            return {
-                ...rest,
-                price,
-                hasActiveDiscount: discounts.length > 0,
-                discountPreview: getMealDiscountPreview(
-                    price,
-                    discounts.map((d) => ({
-                        percentage: Number(d.percentage),
-                        minOrderSubtotal: Number(d.minOrderSubtotal),
-                        maxDiscountAmount: Number(d.maxDiscountAmount),
-                    }))
-                ),
-            };
-        });
-
-        return { success: true, data: serializedMenus };
+        return { success: true, data: newMenus.map(serializeShopMenu) };
     } catch (error) {
         console.error("Error fetching new shop menus:", error);
         return { success: false, error: "Failed to fetch new menus" };
