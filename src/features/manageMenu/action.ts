@@ -450,6 +450,78 @@ export async function toggleMealAvailability(id: string): Promise<ActionResult<S
   } 
 }
 
+export type BulkPriceAdjustInput = {
+  mealIds: string[];
+  direction: 'increase' | 'decrease';
+  amount: number; // positive rupiah amount applied to every selected meal
+};
+
+export async function bulkAdjustMealPrices(
+  input: BulkPriceAdjustInput
+): Promise<ActionResult<SerializableMeal[]>> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: 'Unauthorized' };
+
+    const shopId = await getOwnerShopId(session.user.id);
+    if (!shopId) return { success: false, error: 'Shop not found' };
+
+    if (!input.mealIds || input.mealIds.length === 0) {
+      return { success: false, error: 'Select at least one menu.' };
+    }
+
+    const amount = Math.round(input.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { success: false, error: 'Amount must be greater than 0.' };
+    }
+
+    const delta = input.direction === 'decrease' ? -amount : amount;
+
+    // Validate and update atomically so a concurrent edit can't slip a price below the floor.
+    const result = await prisma.$transaction(async (tx) => {
+      const meals = await tx.meal.findMany({
+        where: { id: { in: input.mealIds }, shopId },
+        select: { id: true, name: true, price: true },
+      });
+
+      if (meals.length !== input.mealIds.length) {
+        return { error: 'Some menus were not found or belong to another shop.' };
+      }
+
+      // Block the whole edit if any resulting price would be <= 0.
+      const offending = meals.filter((m) => Number(m.price) + delta <= 0);
+      if (offending.length > 0) {
+        const names = offending.map((m) => m.name).join(', ');
+        return {
+          error: `This change would make the price Rp0 or below for: ${names}. Nothing was changed.`,
+        };
+      }
+
+      await tx.meal.updateMany({
+        where: { id: { in: input.mealIds }, shopId },
+        data: { price: { increment: delta } },
+      });
+
+      const updated = await tx.meal.findMany({
+        where: { id: { in: input.mealIds }, shopId },
+        include: mealInclude,
+      });
+      return { updated };
+    });
+
+    if ('error' in result) {
+      return { success: false, error: result.error };
+    }
+
+    revalidatePath('/manageMenu');
+
+    return { success: true, data: result.updated!.map(serializeMeal) };
+  } catch (error) {
+    console.error('Error bulk adjusting meal prices:', error);
+    return { success: false, error: 'Failed to update prices' };
+  }
+}
+
 export async function updateMealOrder(
   mealOrders: { id: string; orderNumber: number }[]
 ): Promise<ActionResult<void>> {

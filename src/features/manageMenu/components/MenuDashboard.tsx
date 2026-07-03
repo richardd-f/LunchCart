@@ -5,6 +5,7 @@ import { MealCategory } from '@prisma/client';
 import { getMeals, MealWithRelations, updateMealOrder, ShopDiscountOption } from '../action';
 import MenuCard from './MenuCard';
 import MenuFormModal from './MenuFormModal';
+import BulkPriceModal from './BulkPriceModal';
 import {
   DndContext,
   closestCenter,
@@ -36,6 +37,11 @@ export default function MenuDashboard({ initialMeals, shopDiscounts }: MenuDashb
   const [editingMeal, setEditingMeal] = useState<MealWithRelations | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  // Bulk price edit (select mode)
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -76,9 +82,29 @@ export default function MenuDashboard({ initialMeals, shopDiscounts }: MenuDashb
   };
 
   const handleCardToggle = (updatedMeal: MealWithRelations) => {
-      setMeals(prevMeals => prevMeals.map(meal => 
+      setMeals(prevMeals => prevMeals.map(meal =>
           meal.id === updatedMeal.id ? updatedMeal : meal
       ));
+  };
+
+  // --- Bulk price edit helpers ---
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds([]);
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkSuccess = (updated: MealWithRelations[]) => {
+    const updatedMap = new Map(updated.map((m) => [m.id, m]));
+    setMeals((prev) => prev.map((m) => updatedMap.get(m.id) ?? m));
+    toast.success(`Updated prices for ${updated.length} menu${updated.length === 1 ? '' : 's'}`);
+    exitSelectMode();
   };
 
   // Category filter tabs
@@ -193,16 +219,60 @@ export default function MenuDashboard({ initialMeals, shopDiscounts }: MenuDashb
             className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 sm:text-sm transition duration-150 ease-in-out"
           />
         </div>
-        <button
-          onClick={handleCreate}
-          className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
-        >
-          <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
-          Add Item
-        </button>
+        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
+          <button
+            onClick={() => (isSelectMode ? exitSelectMode() : setIsSelectMode(true))}
+            className={`w-full sm:w-auto flex items-center justify-center px-4 py-2 rounded-lg shadow-sm text-sm font-medium transition-colors ${
+              isSelectMode
+                ? 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                : 'border border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100'
+            }`}
+          >
+            {isSelectMode ? 'Cancel' : 'Bulk Edit Prices'}
+          </button>
+          <button
+            onClick={handleCreate}
+            className="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+          >
+            <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Item
+          </button>
+        </div>
       </div>
+
+      {/* Bulk select toolbar */}
+      {isSelectMode && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-orange-50 border border-orange-200 rounded-xl p-4">
+          <p className="text-sm font-medium text-orange-800">
+            {selectedIds.length} menu{selectedIds.length === 1 ? '' : 's'} selected — tap cards to
+            select
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const filteredIds = filteredMeals.map((m) => m.id);
+                const allSelected = filteredIds.every((id) => selectedIds.includes(id));
+                setSelectedIds(allSelected ? [] : filteredIds);
+              }}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-orange-700 hover:bg-orange-100 transition-colors"
+            >
+              {filteredMeals.length > 0 &&
+              filteredMeals.every((m) => selectedIds.includes(m.id))
+                ? 'Clear all'
+                : 'Select all'}
+            </button>
+            <button
+              onClick={() => setIsBulkModalOpen(true)}
+              disabled={selectedIds.length === 0}
+              className="px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 disabled:opacity-50 transition-colors"
+            >
+              Edit Prices ({selectedIds.length})
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Category Filter Tabs */}
       <div className="flex overflow-x-auto pb-2 gap-2 hide-scrollbar">
@@ -263,16 +333,46 @@ export default function MenuDashboard({ initialMeals, shopDiscounts }: MenuDashb
             strategy={rectSortingStrategy}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredMeals.map((meal) => (
-                <div key={meal.id} className="h-full">
-                    <MenuCard 
-                        meal={meal} 
+              {filteredMeals.map((meal) => {
+                const isSelected = selectedIds.includes(meal.id);
+                return (
+                  <div key={meal.id} className="relative h-full">
+                    <div
+                      className={`h-full rounded-xl transition-shadow ${
+                        isSelected ? 'ring-2 ring-orange-500' : ''
+                      }`}
+                    >
+                      <MenuCard
+                        meal={meal}
                         onEdit={handleEdit}
                         onDelete={handleCardDelete}
                         onToggle={handleCardToggle}
-                    />
-                 </div>
-              ))}
+                      />
+                    </div>
+                    {isSelectMode && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSelected(meal.id)}
+                        aria-pressed={isSelected}
+                        aria-label={`Select ${meal.name}`}
+                        className="absolute inset-0 z-10 rounded-xl cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      >
+                        <span
+                          className={`absolute top-3 left-3 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors ${
+                            isSelected
+                              ? 'bg-orange-600 border-orange-600 text-white'
+                              : 'bg-white/90 border-gray-300 text-transparent'
+                          }`}
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </SortableContext>
         </DndContext>
@@ -284,6 +384,13 @@ export default function MenuDashboard({ initialMeals, shopDiscounts }: MenuDashb
         initialData={editingMeal}
         shopDiscounts={shopDiscounts}
         onSuccess={handleModalSuccess}
+      />
+
+      <BulkPriceModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        selectedMeals={meals.filter((m) => selectedIds.includes(m.id))}
+        onSuccess={handleBulkSuccess}
       />
     </div>
   );
