@@ -8,6 +8,7 @@ import { Footer } from "@/components/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { PageTransition } from "@/components/PageTransition";
+import { NavigationTracker } from "@/components/NavigationTracker";
 import { ToastContainer } from "react-toastify";
 
 const geistSans = Geist({
@@ -112,6 +113,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <AnimatedBackground />
+        <NavigationTracker />
         <SessionProvider>
           <ToastContainer
             position="top-center"

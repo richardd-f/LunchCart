@@ -23,7 +23,7 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
 
                 {/* Back Button (Mobile) */}
                 <div className="md:hidden absolute top-4 left-4 z-10">
-                    <BackButton />
+                    <BackButton shopId={meal.shopId} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
