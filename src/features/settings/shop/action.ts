@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { sendWhatsApp } from '@/lib/gowa';
+import { SHOP_TIMEZONES } from '@/features/discounts/activeDays';
 
 export async function getShopProfile() {
   const session = await auth();
@@ -33,6 +34,7 @@ export async function getShopProfile() {
       dailyOrderLimit: true,
       showNewMenuSection: true,
       isUsingTimePickup: true,
+      timezone: true,
       pickupTimes: true,
       pickupLabels: true,
       orderSchedules: true,
@@ -169,6 +171,12 @@ export async function updateShopProfile(
   const isUsingTimePickup = formData.get('isUsingTimePickup') === 'true';
   const pickupTimes = formData.getAll('pickupTimes') as string[];
 
+  // Timezone (drives discount day-schedules); only accept known Indonesian zones.
+  const timezoneInput = formData.get('timezone') as string;
+  const timezone = SHOP_TIMEZONES.some((tz) => tz.value === timezoneInput)
+    ? timezoneInput
+    : 'Asia/Jakarta';
+
   // Pickup labels arrive as a JSON array of { label, isLiveQueue }
   const pickupLabelsJson = formData.get('pickupLabelsData') as string;
   let pickupLabels: { label: string; isLiveQueue: boolean }[] = [];
@@ -232,6 +240,7 @@ export async function updateShopProfile(
                 dailyOrderLimit,
                 showNewMenuSection,
                 isUsingTimePickup,
+                timezone,
                 orderScheduleMode,
             },
         });

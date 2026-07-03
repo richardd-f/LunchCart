@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { ActionResult } from "@/types/ActionResult";
 import { ShopWithMeals } from "./type";
+import { isDiscountActiveToday } from "@/features/discounts/activeDays";
 
 export async function getHomepageData(searchQuery?: string): Promise<ActionResult<ShopWithMeals[]>> {
   try {
@@ -32,7 +33,7 @@ export async function getHomepageData(searchQuery?: string): Promise<ActionResul
             },
             discounts: {
               where: { isActive: true },
-              select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
+              select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true, activeDays: true },
             },
           },
           take: 10,
@@ -41,9 +42,20 @@ export async function getHomepageData(searchQuery?: string): Promise<ActionResul
       take: 20,
     });
 
+    // Day-schedule gate: keep only discounts active today in each shop's timezone.
+    const data: ShopWithMeals[] = shops.map((shop) => ({
+      ...shop,
+      meals: shop.meals.map((meal) => ({
+        ...meal,
+        discounts: meal.discounts
+          .filter((d) => isDiscountActiveToday(d.activeDays, shop.timezone))
+          .map(({ activeDays: _activeDays, ...d }) => d),
+      })),
+    }));
+
     return {
       success: true,
-      data: shops,
+      data,
     };
   } catch (error) {
     console.error('Error fetching homepage data:', error);

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ActionResult } from "@/types/ActionResult";
 import { Shop, MealCategory } from "@prisma/client";
 import { getMealDiscountPreview, MealDiscountPreview } from "@/features/discounts/getMealDiscountPreview";
+import { getTodayName } from "@/features/discounts/activeDays";
 
 export type ShopDetails = Shop;
 
@@ -54,6 +55,13 @@ export async function getShopMenus(
       whereClause.category = category;
     }
 
+    // Resolve "today" in the shop's timezone for the discount day-schedule.
+    const shop = await prisma.shop.findUnique({
+      where: { id: shopId },
+      select: { timezone: true },
+    });
+    const today = getTodayName(shop?.timezone ?? 'Asia/Jakarta');
+
     const menus = await prisma.meal.findMany({
       where: whereClause,
       include: {
@@ -62,7 +70,7 @@ export async function getShopMenus(
           orderBy: { isPrimary: 'desc' }
         },
         discounts: {
-          where: { isActive: true },
+          where: { isActive: true, activeDays: { has: today } },
           select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
         },
       },
@@ -101,6 +109,12 @@ export async function getShopMenus(
 
 export async function getNewShopMenus(shopId: string, limit = 5): Promise<ActionResult<ShopMenuWithImages[]>> {
     try {
+        const shop = await prisma.shop.findUnique({
+            where: { id: shopId },
+            select: { timezone: true },
+        });
+        const today = getTodayName(shop?.timezone ?? 'Asia/Jakarta');
+
         const newMenus = await prisma.meal.findMany({
             where: {
                 shopId,
@@ -112,7 +126,7 @@ export async function getNewShopMenus(shopId: string, limit = 5): Promise<Action
                     orderBy: { isPrimary: 'desc' }
                 },
                 discounts: {
-                    where: { isActive: true },
+                    where: { isActive: true, activeDays: { has: today } },
                     select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
                 },
             },

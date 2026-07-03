@@ -9,6 +9,7 @@ import {
   createDiscount,
   updateDiscount,
 } from '../action';
+import { WEEK_DAYS, EVERY_DAY } from '@/features/discounts/activeDays';
 
 interface DiscountFormModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function DiscountFormModal({
   const [minOrderSubtotal, setMinOrderSubtotal] = useState<number>(0);
   const [maxDiscountAmount, setMaxDiscountAmount] = useState<number>(0);
   const [isActive, setIsActive] = useState(true);
+  const [activeDays, setActiveDays] = useState<string[]>(EVERY_DAY);
   const [selectedMealIds, setSelectedMealIds] = useState<string[]>([]);
   const [mealSearch, setMealSearch] = useState('');
 
@@ -44,6 +46,9 @@ export default function DiscountFormModal({
         setMinOrderSubtotal(initialData.minOrderSubtotal);
         setMaxDiscountAmount(initialData.maxDiscountAmount);
         setIsActive(initialData.isActive);
+        setActiveDays(
+          initialData.activeDays.length > 0 ? initialData.activeDays : EVERY_DAY
+        );
         setSelectedMealIds(initialData.meals.map((m) => m.id));
       } else {
         setName('');
@@ -51,6 +56,7 @@ export default function DiscountFormModal({
         setMinOrderSubtotal(0);
         setMaxDiscountAmount(0);
         setIsActive(true);
+        setActiveDays(EVERY_DAY);
         setSelectedMealIds([]);
       }
       setMealSearch('');
@@ -84,11 +90,22 @@ export default function DiscountFormModal({
     }
   };
 
+  const toggleDay = (day: string) => {
+    setActiveDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (percentage <= 0 || percentage > 100) {
       setError('Percentage must be between 0 and 100.');
+      return;
+    }
+
+    if (activeDays.length === 0) {
+      setError('Select at least one active day.');
       return;
     }
 
@@ -101,6 +118,7 @@ export default function DiscountFormModal({
       minOrderSubtotal: minOrderSubtotal || 0,
       maxDiscountAmount: maxDiscountAmount || 0,
       isActive,
+      activeDays,
       mealIds: selectedMealIds,
     };
 
@@ -213,6 +231,48 @@ export default function DiscountFormModal({
                 />
               </div>
             </div>
+          </div>
+
+          {/* Active days */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Active days{' '}
+                <span className="text-xs text-gray-500">
+                  ({activeDays.length === 7 ? 'every day' : `${activeDays.length} selected`})
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setActiveDays(EVERY_DAY)}
+                className="text-xs font-medium text-[#F97352] hover:underline"
+              >
+                Every day
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {WEEK_DAYS.map((day) => {
+                const selected = activeDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    aria-pressed={selected}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                      selected
+                        ? 'bg-[#F97352] text-white shadow-md shadow-orange-200'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-xs text-gray-500">
+              The discount only applies on the selected days.
+            </p>
           </div>
 
           {/* Attach to menus */}

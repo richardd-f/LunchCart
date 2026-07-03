@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { sanitizeActiveDays } from '@/features/discounts/activeDays';
 
 export type ActionResult<T> = {
   success: boolean;
@@ -25,6 +26,7 @@ export interface SerializableDiscount {
   minOrderSubtotal: number;
   maxDiscountAmount: number;
   isActive: boolean;
+  activeDays: string[];
   createdAt: Date;
   updatedAt: Date;
   meals: SerializableDiscountMeal[];
@@ -38,6 +40,7 @@ export type CreateDiscountInput = {
   minOrderSubtotal: number;
   maxDiscountAmount: number;
   isActive: boolean;
+  activeDays: string[];
   mealIds: string[];
 };
 
@@ -68,6 +71,7 @@ type DiscountWithMeals = {
   minOrderSubtotal: unknown;
   maxDiscountAmount: unknown;
   isActive: boolean;
+  activeDays: string[];
   createdAt: Date;
   updatedAt: Date;
   meals: { id: string; name: string }[];
@@ -82,6 +86,7 @@ function serializeDiscount(discount: DiscountWithMeals): SerializableDiscount {
     minOrderSubtotal: Number(discount.minOrderSubtotal),
     maxDiscountAmount: Number(discount.maxDiscountAmount),
     isActive: discount.isActive,
+    activeDays: discount.activeDays,
     createdAt: discount.createdAt,
     updatedAt: discount.updatedAt,
     meals: discount.meals.map((m) => ({ id: m.id, name: m.name })),
@@ -155,6 +160,11 @@ export async function createDiscount(
     const shopId = await getOwnerShopId(session.user.id);
     if (!shopId) return { success: false, error: 'Shop not found' };
 
+    const activeDays = sanitizeActiveDays(data.activeDays);
+    if (activeDays.length === 0) {
+      return { success: false, error: 'Select at least one active day.' };
+    }
+
     const mealIds = await filterShopMealIds(shopId, data.mealIds);
 
     const discount = await prisma.discount.create({
@@ -165,6 +175,7 @@ export async function createDiscount(
         minOrderSubtotal: data.minOrderSubtotal,
         maxDiscountAmount: data.maxDiscountAmount,
         isActive: data.isActive,
+        activeDays,
         meals: { connect: mealIds.map((id) => ({ id })) },
       },
       include: {
@@ -195,6 +206,12 @@ export async function updateDiscount(
       return { success: false, error: 'Discount not found or unauthorized' };
     }
 
+    const activeDays =
+      data.activeDays !== undefined ? sanitizeActiveDays(data.activeDays) : undefined;
+    if (activeDays !== undefined && activeDays.length === 0) {
+      return { success: false, error: 'Select at least one active day.' };
+    }
+
     const discount = await prisma.discount.update({
       where: { id: data.id },
       data: {
@@ -203,6 +220,7 @@ export async function updateDiscount(
         minOrderSubtotal: data.minOrderSubtotal,
         maxDiscountAmount: data.maxDiscountAmount,
         isActive: data.isActive,
+        activeDays,
         ...(data.mealIds !== undefined
           ? { meals: { set: (await filterShopMealIds(shopId, data.mealIds)).map((id) => ({ id })) } }
           : {}),

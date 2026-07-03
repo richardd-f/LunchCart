@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsApp } from '@/lib/gowa';
 import { calculateOrderDiscounts, DiscountRule, DiscountableItem } from '@/features/discounts/calculateDiscount';
+import { getTodayName, isDiscountActiveToday } from '@/features/discounts/activeDays';
 
 // Type definitions for Cart items with relations
 export type CartItemWithDetails = {
@@ -87,12 +88,14 @@ export async function getCartItems() {
     // Convert Decimals to numbers for client safety
     return cartItems.map(item => {
         const { discountPrice: _omitDiscountPrice, discounts, shop, ...mealRest } = item.meal;
+        // Day-schedule gate: only expose discounts active today in the shop's timezone.
+        const todaysDiscounts = discounts.filter(d => isDiscountActiveToday(d.activeDays, shop.timezone));
         return {
             ...item,
             meal: {
                 ...mealRest,
                 price: Number(item.meal.price),
-                discounts: discounts.map(d => ({
+                discounts: todaysDiscounts.map(d => ({
                     id: d.id,
                     name: d.name,
                     percentage: Number(d.percentage),
@@ -148,13 +151,14 @@ export async function createOrder(
     // Fetch shop to check pickup mode
     const shop = await prisma.shop.findUnique({
         where: { id: shopId },
-        select: { 
-            orderCutoffMinutes: true, 
-            dailyOrderLimit: true, 
+        select: {
+            orderCutoffMinutes: true,
+            dailyOrderLimit: true,
             name: true,
             isUsingTimePickup: true,
             orderScheduleMode: true,
             orderSchedules: true,
+            timezone: true,
         },
     });
 
@@ -189,7 +193,11 @@ export async function createOrder(
         include: {
             meal: {
                 include: {
-                    discounts: { where: { isActive: true } },
+                    // Server-authoritative: a promo can never be redeemed outside
+                    // its scheduled days (today = shop's timezone).
+                    discounts: {
+                        where: { isActive: true, activeDays: { has: getTodayName(shop.timezone) } },
+                    },
                 },
             },
             options: {

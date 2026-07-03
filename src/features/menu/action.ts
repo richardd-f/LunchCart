@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { Meal, MealCategory, MealOptionValue } from '@prisma/client'
 import { getMealDiscountPreview, MealDiscountPreview } from '@/features/discounts/getMealDiscountPreview'
+import { isDiscountActiveToday } from '@/features/discounts/activeDays'
 
 // -- Types --
 export interface AddToCartInput {
@@ -73,13 +74,14 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
             },
             discounts: {
                 where: { isActive: true },
-                select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
+                select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true, activeDays: true },
             },
             shop: {
                 select: {
                     id: true,
                     name: true,
-                    profileImage: true
+                    profileImage: true,
+                    timezone: true
                 }
             },
             optionGroups: {
@@ -120,15 +122,18 @@ export async function getMealDetails(mealId: string): Promise<MealWithDetails | 
     if (!meal) return null
 
     // Manually map to plain object to handle Decimal -> Number conversion
-    const { discountPrice: _omitDiscountPrice, discounts, ...rest } = meal;
+    const { discountPrice: _omitDiscountPrice, discounts, shop, ...rest } = meal;
     const price = Number(meal.price);
+    // Day-schedule gate: only discounts active today in the shop's timezone.
+    const todaysDiscounts = discounts.filter((d) => isDiscountActiveToday(d.activeDays, shop.timezone));
     return {
         ...rest,
+        shop: { id: shop.id, name: shop.name, profileImage: shop.profileImage },
         price,
-        hasActiveDiscount: discounts.length > 0,
+        hasActiveDiscount: todaysDiscounts.length > 0,
         discountPreview: getMealDiscountPreview(
             price,
-            discounts.map((d) => ({
+            todaysDiscounts.map((d) => ({
                 percentage: Number(d.percentage),
                 minOrderSubtotal: Number(d.minOrderSubtotal),
                 maxDiscountAmount: Number(d.maxDiscountAmount),

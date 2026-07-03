@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useEffect } from 'react';
 import { updateShopProfile } from '../action';
+import { SHOP_TIMEZONES } from '@/features/discounts/activeDays';
 import UploadButton from '@/components/UploadButton';
 import Image from 'next/image';
 import { toast } from 'react-toastify';
@@ -23,6 +24,7 @@ interface ShopProfileFormProps {
         time: string;
     }[];
     isUsingTimePickup: boolean;
+    timezone: string;
     pickupLabels: {
         id: string;
         label: string;
@@ -84,6 +86,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
         : [{ label: 'Lunch Break', isLiveQueue: false }]
   );
   const [isUsingTimePickup, setIsUsingTimePickup] = useState(initialData.isUsingTimePickup ?? true);
+  const [timezone, setTimezone] = useState(initialData.timezone || 'Asia/Jakarta');
   const [showNewMenuSection, setShowNewMenuSection] = useState(initialData.showNewMenuSection ?? true);
 
   // Order Schedule State
@@ -493,6 +496,29 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                 Set to 0 for unlimited orders.
               </p>
               <input type="hidden" name="dailyOrderLimit" value={dailyOrderLimit.toString()} />
+            </div>
+
+            {/* Shop Timezone */}
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+                Shop Timezone
+              </label>
+              <select
+                id="timezone"
+                name="timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="mt-2 block w-full sm:w-72 rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border bg-white"
+              >
+                {SHOP_TIMEZONES.map((tz) => (
+                  <option key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                Used to decide the current day for discount schedules (e.g. a Monday-only promo).
+              </p>
             </div>
 
             {/* Order Schedule Settings */}

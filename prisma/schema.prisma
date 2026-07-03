@@ -141,6 +141,7 @@ model Shop {
   dailyOrderLimit    Int        @default(0) @map("daily_order_limit")
   showNewMenuSection Boolean    @default(false) @map("show_new_menu_section")
   isUsingTimePickup  Boolean    @default(true) @map("is_using_time_pickup")
+  timezone           String     @default("Asia/Jakarta") @db.VarChar(30)
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
 
@@ -253,6 +254,9 @@ model Discount {
   minOrderSubtotal  Decimal  @default(0) @map("min_order_subtotal") @db.Decimal(10, 2)
   maxDiscountAmount Decimal  @default(0) @map("max_discount_amount") @db.Decimal(10, 2)
   isActive          Boolean  @default(true) @map("is_active")
+  // Days of week (long English names, e.g. "Monday") the discount is active on.
+  // Same convention as OrderSchedule.day. Default: every day.
+  activeDays        String[] @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]) @map("active_days")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

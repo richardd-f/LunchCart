@@ -22,6 +22,11 @@ const formatRupiah = (value: number) =>
     minimumFractionDigits: 0,
   }).format(value);
 
+const formatActiveDays = (days: string[]) => {
+  if (days.length === 0 || days.length === 7) return 'Every day';
+  return days.map((d) => d.slice(0, 3)).join(', ');
+};
+
 export default function DiscountCard({
   discount,
   onEdit,
@@ -87,6 +92,12 @@ export default function DiscountCard({
             <dt className="text-gray-500">Max. discount</dt>
             <dd className="font-medium text-gray-900">
               {discount.maxDiscountAmount > 0 ? formatRupiah(discount.maxDiscountAmount) : 'No cap'}
+            </dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-gray-500">Active days</dt>
+            <dd className="font-medium text-gray-900 text-right">
+              {formatActiveDays(discount.activeDays)}
             </dd>
           </div>
         </dl>
