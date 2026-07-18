@@ -90,6 +90,19 @@ export function MenuGrid({
   // Let's use standard enum values
   const categories: (MealCategory | 'ALL')[] = ['ALL', 'MEAL', 'SNACK', 'DRINK', 'DESSERT', 'TOOL', 'SAUCE'];
 
+  const formatCategory = (cat: MealCategory) => cat.charAt(0) + cat.slice(1).toLowerCase();
+
+  // "All Items" arrives category-sorted from the backend, so consecutive
+  // slices per category form the grouped sections (they extend as pages load).
+  const categoryGroups: { category: MealCategory; items: ShopMenuWithImages[] }[] = [];
+  if (selectedCategory === 'ALL') {
+    for (const menu of menus) {
+      const lastGroup = categoryGroups[categoryGroups.length - 1];
+      if (lastGroup && lastGroup.category === menu.category) lastGroup.items.push(menu);
+      else categoryGroups.push({ category: menu.category, items: [menu] });
+    }
+  }
+
   return (
     <section>
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -118,11 +131,29 @@ export function MenuGrid({
       </div>
 
       {menus.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
-          {menus.map((menu) => (
-            <MenuCard key={menu.id} menu={menu} />
-          ))}
-        </div>
+        selectedCategory === 'ALL' ? (
+          <div className="flex flex-col gap-8">
+            {categoryGroups.map((group) => (
+              <div key={group.category}>
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-800">
+                  <span className="inline-block h-5 w-1 rounded-full bg-gradient-to-b from-[#F97352] to-amber-400" />
+                  {formatCategory(group.category)}
+                </h3>
+                <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+                  {group.items.map((menu) => (
+                    <MenuCard key={menu.id} menu={menu} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
+            {menus.map((menu) => (
+              <MenuCard key={menu.id} menu={menu} />
+            ))}
+          </div>
+        )
       ) : isSwitching ? (
         <div className="flex justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#F97352] border-t-transparent" />

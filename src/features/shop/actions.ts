@@ -110,10 +110,12 @@ export async function getShopMenusPage(
           select: { id: true, percentage: true, minOrderSubtotal: true, maxDiscountAmount: true },
         },
       },
-      orderBy: [
-        { orderNumber: 'asc' },
-        { createdAt: 'asc' }
-      ],
+      // "All Items" is grouped by category on the shop page, so the unfiltered
+      // list must arrive category-sorted for the groups to build up correctly
+      // as pages lazy-load.
+      orderBy: category
+        ? [{ orderNumber: 'asc' }, { createdAt: 'asc' }]
+        : [{ category: 'asc' }, { orderNumber: 'asc' }, { createdAt: 'asc' }],
       skip: offset,
       take: take + 1,
     });
