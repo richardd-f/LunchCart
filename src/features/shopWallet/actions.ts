@@ -11,16 +11,17 @@ export type WalletData = {
   transactions: Transaction[];
 };
 
-export async function getShopWalletData(): Promise<WalletData> {
+export async function getShopWalletData(): Promise<WalletData | null> {
   const session = await auth();
   if (!session?.user) {
     redirect("/auth/signin");
   }
 
-  // Find the shop associated with the user
+  // Wallet data is owner-only: staff must never see shop finances.
   const userShopRole = await prisma.userShopRole.findFirst({
     where: {
       userId: session.user.id,
+      role: "OWNER",
     },
     include: {
       shop: true,
@@ -28,14 +29,7 @@ export async function getShopWalletData(): Promise<WalletData> {
   });
 
   if (!userShopRole || !userShopRole.shop) {
-    // Handle case where user has no shop. 
-    // For now, we might return zeros or throw, but redirecting to home or shop creation might be better.
-    // Assuming for this task the user is a shop owner/staff.
-    return {
-      balance: 0,
-      pendingBalance: 0,
-      transactions: [],
-    };
+    return null;
   }
 
   const shopId = userShopRole.shop.id;

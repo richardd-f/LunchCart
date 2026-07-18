@@ -10,7 +10,7 @@ import { NavDropdown } from './NavDropdown';
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
-  const [navInfo, setNavInfo] = useState<UserNavInfo>({ isLoggedIn: false, hasShopRole: false });
+  const [navInfo, setNavInfo] = useState<UserNavInfo>({ isLoggedIn: false, hasShopRole: false, isShopOwner: false });
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
   const [mobileAdminOpen, setMobileAdminOpen] = useState(false);
 
@@ -18,7 +18,7 @@ export function NavBar() {
     if (session?.user) {
       getUserNavInfo().then(setNavInfo);
     } else {
-      setNavInfo({ isLoggedIn: false, hasShopRole: false });
+      setNavInfo({ isLoggedIn: false, hasShopRole: false, isShopOwner: false });
     }
   }, [session]);
 
@@ -51,7 +51,8 @@ export function NavBar() {
                     {label: "Shop Orders",href: '/dashboard/shop/shopOrders'},
                     {label: "Manage Menu",href: '/dashboard/shop/manageMenu'},
                     {label: "Manage Discounts",href: '/dashboard/shop/manageDiscounts'},
-                    {label: "Shop Wallet",href: '/dashboard/shop/shopWallet'},
+                    // Wallet is owner-only; staff never see shop finances.
+                    ...(navInfo.isShopOwner ? [{label: "Shop Wallet", href: '/dashboard/shop/shopWallet'}] : []),
                   ]}
                 />
               )}
@@ -216,13 +217,15 @@ export function NavBar() {
                 >
                   Manage Discounts
                 </Link>
-                <Link
-                  href="/dashboard/shop/shopWallet"
-                  className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Shop Wallet
-                </Link>
+                {navInfo.isShopOwner && (
+                  <Link
+                    href="/dashboard/shop/shopWallet"
+                    className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Shop Wallet
+                  </Link>
+                )}
               </div>
             </div>
           )}
