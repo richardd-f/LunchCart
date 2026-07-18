@@ -141,6 +141,9 @@ model Shop {
   dailyOrderLimit    Int        @default(0) @map("daily_order_limit")
   showNewMenuSection Boolean    @default(false) @map("show_new_menu_section")
   isUsingTimePickup  Boolean    @default(true) @map("is_using_time_pickup")
+  // Label Pickup only: orders for day D close X hours before D's midnight
+  // in the shop's timezone (default 3 = latest order 21:00 the day before). 0 disables.
+  labelOrderCutoffHours Int     @default(3) @map("label_order_cutoff_hours")
   timezone           String     @default("Asia/Jakarta") @db.VarChar(30)
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")

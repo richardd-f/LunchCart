@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { sendWhatsApp } from '@/lib/gowa';
 import { calculateOrderDiscounts, DiscountRule, DiscountableItem } from '@/features/discounts/calculateDiscount';
-import { getTodayName, isDiscountActiveToday } from '@/features/discounts/activeDays';
+import { getTodayName, isDiscountActiveToday, shopDayStartUtc } from '@/features/discounts/activeDays';
 
 // Type definitions for Cart items with relations
 export type CartItemWithDetails = {
@@ -26,6 +26,8 @@ export type CartItemWithDetails = {
             fixedTimePickup: boolean;
             isUsingTimePickup: boolean; // Added
             orderCutoffMinutes: number;
+            labelOrderCutoffHours: number;
+            timezone: string;
             pickupTimes: {
               time: string;
             }[];
@@ -108,6 +110,8 @@ export async function getCartItems() {
                     fixedTimePickup: shop.fixedTimePickup,
                     isUsingTimePickup: shop.isUsingTimePickup ?? true, // Added default
                     orderCutoffMinutes: shop.orderCutoffMinutes,
+                    labelOrderCutoffHours: shop.labelOrderCutoffHours ?? 3,
+                    timezone: shop.timezone,
                     pickupTimes: shop.pickupTimes || [],
                     pickupLabels: shop.pickupLabels || [], // Added
                 }
@@ -153,6 +157,7 @@ export async function createOrder(
         where: { id: shopId },
         select: {
             orderCutoffMinutes: true,
+            labelOrderCutoffHours: true,
             dailyOrderLimit: true,
             name: true,
             isUsingTimePickup: true,
@@ -286,6 +291,20 @@ export async function createOrder(
              if (!isAllowed) {
                  return { error: `Sorry, this shop is currently closed. We only accept orders during our scheduled hours.` };
              }
+        }
+    }
+
+    // Validate day-before cutoff (ONLY if using Label Pickup): orders for day D
+    // close X hours before D's midnight in the shop's timezone.
+    if (!shop.isUsingTimePickup && shop.labelOrderCutoffHours > 0) {
+        const dayStart = shopDayStartUtc(pickupDateStr, shop.timezone);
+        const deadline = new Date(dayStart.getTime() - shop.labelOrderCutoffHours * 60 * 60 * 1000);
+
+        if (new Date() > deadline) {
+            const deadlineHour = String((24 - (shop.labelOrderCutoffHours % 24)) % 24).padStart(2, '0');
+            return {
+                error: `Orders for this pickup day closed at ${deadlineHour}:00 the day before. Please choose a later pickup date.`,
+            };
         }
     }
 

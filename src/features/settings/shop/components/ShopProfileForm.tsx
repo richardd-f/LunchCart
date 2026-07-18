@@ -24,6 +24,7 @@ interface ShopProfileFormProps {
         time: string;
     }[];
     isUsingTimePickup: boolean;
+    labelOrderCutoffHours: number;
     timezone: string;
     pickupLabels: {
         id: string;
@@ -86,6 +87,7 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
         : [{ label: 'Lunch Break', isLiveQueue: false }]
   );
   const [isUsingTimePickup, setIsUsingTimePickup] = useState(initialData.isUsingTimePickup ?? true);
+  const [labelOrderCutoffHours, setLabelOrderCutoffHours] = useState(initialData.labelOrderCutoffHours ?? 3);
   const [timezone, setTimezone] = useState(initialData.timezone || 'Asia/Jakarta');
   const [showNewMenuSection, setShowNewMenuSection] = useState(initialData.showNewMenuSection ?? true);
 
@@ -301,6 +303,8 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                </div>
             </div>
             <input type="hidden" name="isUsingTimePickup" value={isUsingTimePickup.toString()} />
+            {/* Always submitted so switching pickup modes never silently resets the cutoff */}
+            <input type="hidden" name="labelOrderCutoffHours" value={labelOrderCutoffHours.toString()} />
 
             {/* Pickup Label Settings */}
             {!isUsingTimePickup && (
@@ -358,6 +362,30 @@ export default function ShopProfileForm({ initialData }: ShopProfileFormProps) {
                   </button>
                 </div>
                 <input type="hidden" name="pickupLabelsData" value={JSON.stringify(pickupLabels)} />
+
+                {/* Day-before order cutoff */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <label htmlFor="labelOrderCutoffHours" className="block text-sm font-medium text-gray-700">
+                    Order Cutoff (hours before midnight of the pickup day)
+                  </label>
+                  <div className="mt-2 flex items-center gap-3">
+                    <input
+                      type="number"
+                      id="labelOrderCutoffHours"
+                      min="0"
+                      max="24"
+                      value={labelOrderCutoffHours}
+                      onChange={(e) => setLabelOrderCutoffHours(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
+                    />
+                    <span className="text-sm text-gray-500">hours</span>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {labelOrderCutoffHours > 0
+                      ? `Customers must order the day before: the latest order for a pickup day is ${String((24 - labelOrderCutoffHours % 24) % 24).padStart(2, '0')}:00 the previous day (H-${labelOrderCutoffHours} before 00:00). Set to 0 to disable.`
+                      : 'Cutoff disabled — customers can order any time, including the pickup day itself.'}
+                  </p>
+                </div>
               </div>
             )}
 

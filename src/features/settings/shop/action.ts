@@ -34,6 +34,7 @@ export async function getShopProfile() {
       dailyOrderLimit: true,
       showNewMenuSection: true,
       isUsingTimePickup: true,
+      labelOrderCutoffHours: true,
       timezone: true,
       pickupTimes: true,
       pickupLabels: true,
@@ -169,6 +170,7 @@ export async function updateShopProfile(
   const dailyOrderLimit = parseInt(formData.get('dailyOrderLimit') as string) || 0;
   const showNewMenuSection = formData.get('showNewMenuSection') === 'true';
   const isUsingTimePickup = formData.get('isUsingTimePickup') === 'true';
+  const labelOrderCutoffHours = Math.max(0, parseInt(formData.get('labelOrderCutoffHours') as string) || 0);
   const pickupTimes = formData.getAll('pickupTimes') as string[];
 
   // Timezone (drives discount day-schedules); only accept known Indonesian zones.
@@ -240,6 +242,7 @@ export async function updateShopProfile(
                 dailyOrderLimit,
                 showNewMenuSection,
                 isUsingTimePickup,
+                labelOrderCutoffHours,
                 timezone,
                 orderScheduleMode,
             },

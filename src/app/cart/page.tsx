@@ -16,6 +16,31 @@ import { toast } from 'react-toastify';
 const formatIDR = (amount: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
 
+// Supported shop timezones are fixed-offset (no DST), same table as the server.
+const TZ_OFFSETS: Record<string, string> = {
+  'Asia/Jakarta': '+07:00',
+  'Asia/Makassar': '+08:00',
+  'Asia/Jayapura': '+09:00',
+};
+
+/**
+ * Earliest pickup day (YYYY-MM-DD) still orderable for a Label Pickup shop:
+ * orders for day D close X hours before D's midnight in the shop's timezone,
+ * so with a cutoff the earliest option is usually tomorrow.
+ */
+const getMinLabelPickupDate = (timezone: string, cutoffHours: number): string => {
+  const offset = TZ_OFFSETS[timezone] ?? '+07:00';
+  const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: timezone }); // YYYY-MM-DD
+  const shopToday = dayFmt.format(new Date());
+  const base = new Date(`${shopToday}T00:00:00${offset}`).getTime();
+  for (let i = 0; i <= 30; i++) {
+    const dayStr = dayFmt.format(new Date(base + i * 86400000));
+    const deadline = new Date(`${dayStr}T00:00:00${offset}`).getTime() - cutoffHours * 3600000;
+    if (Date.now() <= deadline) return dayStr;
+  }
+  return dayFmt.format(new Date(base + 30 * 86400000));
+};
+
 // Define Snap type globally
 declare global {
   interface Window {
@@ -423,10 +448,18 @@ export default function CartPage() {
                                     type="date"
                                     value={pickupDate}
                                     onChange={(e) => setPickupDate(e.target.value)}
-                                    // Optionally enforce min date as today
-                                    min={new Date().toISOString().split('T')[0]}
+                                    min={
+                                        !shop.isUsingTimePickup && shop.labelOrderCutoffHours > 0
+                                            ? getMinLabelPickupDate(shop.timezone, shop.labelOrderCutoffHours)
+                                            : new Date().toISOString().split('T')[0]
+                                    }
                                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97352] focus:ring-[#F97352] sm:text-sm p-2 border"
                                 />
+                                {!shop.isUsingTimePickup && shop.labelOrderCutoffHours > 0 && (
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Orders close at {String((24 - (shop.labelOrderCutoffHours % 24)) % 24).padStart(2, '0')}:00 the day before pickup.
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">

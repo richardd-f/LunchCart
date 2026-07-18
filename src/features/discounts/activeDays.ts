@@ -29,6 +29,22 @@ export const SHOP_TIMEZONES = [
 
 const DEFAULT_TIMEZONE = 'Asia/Jakarta';
 
+/**
+ * UTC instant of 00:00 on the given calendar day (YYYY-MM-DD) in the shop's
+ * timezone. All supported zones are fixed-offset (no DST), so a static offset
+ * table is exact.
+ */
+const TZ_OFFSETS: Record<string, string> = {
+  'Asia/Jakarta': '+07:00',
+  'Asia/Makassar': '+08:00',
+  'Asia/Jayapura': '+09:00',
+};
+
+export function shopDayStartUtc(dateStr: string, timezone: string): Date {
+  const offset = TZ_OFFSETS[timezone] ?? TZ_OFFSETS[DEFAULT_TIMEZONE];
+  return new Date(`${dateStr}T00:00:00${offset}`);
+}
+
 /** Long English day name ("Monday") for the current moment in the given timezone. */
 export function getTodayName(timezone: string): string {
   try {
