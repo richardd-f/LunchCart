@@ -15,6 +15,8 @@ export type ShopMenuWithImages = {
   name: string;
   description: string;
   price: number; // Converted from Decimal
+  isCoinMenu: boolean;
+  coinPrice: number;
   hasActiveDiscount: boolean;
   discountPreview: MealDiscountPreview | null;
   category: MealCategory;

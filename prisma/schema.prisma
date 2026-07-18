@@ -270,6 +270,9 @@ model Meal {
   price         Decimal      @db.Decimal(10, 2)
   discountPrice Decimal      @default(0) @db.Decimal(10, 2)
   category      MealCategory @default(MEAL)
+  // Coin menu: priced in Lart Coins (coinPrice), Rupiah price unused; no option groups.
+  isCoinMenu    Boolean      @default(false) @map("is_coin_menu")
+  coinPrice     Int          @default(0) @map("coin_price")
   isAvailable   Boolean      @default(true) @map("isAvailable")
   orderNumber   Int          @default(0) @map("order_number")
   createdAt     DateTime     @default(now()) @map("created_at")
@@ -414,6 +417,8 @@ model Order {
   paymentMethod         String?       @map("payment_method") @db.VarChar(30)
   snapToken             String?       @map("snap_token") @db.VarChar(255)
   totalAmount           Decimal       @map("total_amount") @db.Decimal(10, 2)
+  // Coin orders: coins spent (totalAmount holds the Rupiah conversion at order-time rate).
+  paidWithCoins         Int           @default(0) @map("paid_with_coins")
   paymentTime           DateTime?     @map("payment_time")
   rawMidtransResponse   Json?         @map("raw_midtrans_response")
   createdAt             DateTime      @default(now()) @map("created_at")

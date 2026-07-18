@@ -149,9 +149,20 @@ export default function OrderCard({ order, onPay, onCancel }: OrderCardProps) {
             <div className="p-4 border-t border-gray-100 flex items-center justify-between mt-auto">
                 <div className="flex flex-col">
                     <span className="text-xs text-gray-500">Total Price</span>
-                    <span className="text-lg font-bold text-gray-900">
-                         {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(order.totalAmount))}
-                    </span>
+                    {order.paidWithCoins > 0 ? (
+                        <>
+                            <span className="text-lg font-bold text-amber-600">
+                                🪙 {order.paidWithCoins} Lart Coin
+                            </span>
+                            <span className="text-xs text-gray-400">
+                                ≈ {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(order.totalAmount))}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="text-lg font-bold text-gray-900">
+                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(order.totalAmount))}
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex gap-2">

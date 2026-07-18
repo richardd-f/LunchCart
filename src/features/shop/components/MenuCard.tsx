@@ -66,7 +66,11 @@ export function MenuCard({ menu }: MenuCardProps) {
           </p>
           
           <div className="flex items-end justify-between mt-auto pt-3 border-t border-gray-50">
-             {menu.discountPreview ? (
+             {menu.isCoinMenu ? (
+                <span className="font-bold text-amber-600 text-lg">
+                   🪙 {menu.coinPrice}
+                </span>
+             ) : menu.discountPreview ? (
                 <div className="flex flex-col leading-tight">
                    <span className="text-xs font-medium text-gray-400 line-through">
                       {formatIDR(menu.discountPreview.originalPrice)}

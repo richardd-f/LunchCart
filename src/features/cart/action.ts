@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { sendWhatsApp } from '@/lib/gowa';
 import { calculateOrderDiscounts, DiscountRule, DiscountableItem } from '@/features/discounts/calculateDiscount';
 import { getTodayName, isDiscountActiveToday, shopDayStartUtc } from '@/features/discounts/activeDays';
+import { getOrCreateLartCoinConfig } from '@/features/lartCoin/coins';
+import { emitQueueUpdate } from '@/lib/queueEvents';
 
 // Type definitions for Cart items with relations
 export type CartItemWithDetails = {
@@ -17,6 +19,8 @@ export type CartItemWithDetails = {
         id: string;
         name: string;
         price: number; // Decimal converted to number for client
+        isCoinMenu: boolean;
+        coinPrice: number;
         discounts: DiscountRule[]; // active discounts linked to this meal
         description: string;
         shopId: string;
@@ -131,7 +135,133 @@ export type CreateOrderState = {
     error?: string;
     token?: string; // Snap token
     redirectUrl?: string; // Midtrans redirect URL (optional)
+    success?: boolean; // Coin orders complete without a Snap popup
 };
+
+// Shop fields needed by the shared order-timing rules below.
+type OrderTimingShop = {
+    dailyOrderLimit: number;
+    orderScheduleMode: 'OFF' | 'ON';
+    orderSchedules: { day: string; startTime: string; endTime: string }[];
+    isUsingTimePickup: boolean;
+    labelOrderCutoffHours: number;
+    orderCutoffMinutes: number;
+    timezone: string;
+};
+
+/**
+ * Rules shared by Rupiah and Lart Coin checkouts: daily order limit, order
+ * schedule (on/off hours), label-pickup day-before cutoff, and time-pickup
+ * minute cutoff. Returns an error message, or null when the order may proceed.
+ */
+async function validateOrderTiming(
+    shop: OrderTimingShop,
+    shopId: string,
+    pickupDateStr: string,
+    pickupDateTime: Date
+): Promise<string | null> {
+    // Validate daily order limit (Apply for both modes? Yes, usually)
+    if (shop.dailyOrderLimit > 0) {
+
+        const startOfDay = new Date(pickupDateTime);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const endOfDay = new Date(pickupDateTime);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        const orderCount = await prisma.order.count({
+            where: {
+                shopId: shopId,
+                orderStatus: { not: 'CANCELLED' },
+                pickupDate: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
+            }
+        });
+
+        if (orderCount >= shop.dailyOrderLimit) {
+            return 'We’re fully booked for this date! We’d love to serve you another time—please check our calendar for the next available opening. 😊';
+        }
+    }
+
+    // Validate Order Schedule (New Feature)
+    // We check against the CURRENT time when the user is trying to place the order.
+    if (shop.orderScheduleMode !== 'OFF' || shop.orderSchedules.length > 0) {
+        const now = new Date();
+        const currentBufferDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+        const currentDay = currentBufferDate.toLocaleDateString('en-US', { weekday: 'long' }); // e.g., "Monday"
+
+        // Helper to convert HH:MM to minutes
+        const getMinutes = (timeStr: string) => {
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        };
+
+        const currentMinutes = currentBufferDate.getHours() * 60 + currentBufferDate.getMinutes();
+
+        // Find schedules for today
+        const todaysSchedules = shop.orderSchedules.filter(s => s.day === currentDay);
+
+        if (shop.orderScheduleMode === 'OFF') {
+             // "Off Time" mode: User CANNOT buy if current time is WITHIN any of the ranges
+             for (const schedule of todaysSchedules) {
+                 const start = getMinutes(schedule.startTime);
+                 const end = getMinutes(schedule.endTime);
+
+                 if (currentMinutes >= start && currentMinutes < end) {
+                      return `Sorry, this shop is currently not accepting orders (Off Time: ${schedule.startTime} - ${schedule.endTime}). Please try again later.`;
+                 }
+             }
+        } else if (shop.orderScheduleMode === 'ON') {
+             // "On Time" mode: User CAN ONLY buy if current time is WITHIN at least one of the ranges
+             // If there are no schedules for today, implies closed? Or open? Usually "On Time" implies detailed allow-list.
+             // If no schedule for today -> assuming CLOSED for consistency with "Allowed Times".
+
+             let isAllowed = false;
+             if (todaysSchedules.length > 0) {
+                 for (const schedule of todaysSchedules) {
+                     const start = getMinutes(schedule.startTime);
+                     const end = getMinutes(schedule.endTime);
+
+                     if (currentMinutes >= start && currentMinutes < end) {
+                         isAllowed = true;
+                         break;
+                     }
+                 }
+             }
+
+             if (!isAllowed) {
+                 return `Sorry, this shop is currently closed. We only accept orders during our scheduled hours.`;
+             }
+        }
+    }
+
+    // Validate day-before cutoff (ONLY if using Label Pickup): orders for day D
+    // close X hours before D's midnight in the shop's timezone.
+    if (!shop.isUsingTimePickup && shop.labelOrderCutoffHours > 0) {
+        const dayStart = shopDayStartUtc(pickupDateStr, shop.timezone);
+        const deadline = new Date(dayStart.getTime() - shop.labelOrderCutoffHours * 60 * 60 * 1000);
+
+        if (new Date() > deadline) {
+            const deadlineHour = String((24 - (shop.labelOrderCutoffHours % 24)) % 24).padStart(2, '0');
+            return `Orders for this pickup day closed at ${deadlineHour}:00 the day before. Please choose a later pickup date.`;
+        }
+    }
+
+    // Validate order cutoff time (ONLY if using Time Pickup)
+    if (shop.isUsingTimePickup && shop.orderCutoffMinutes > 0) {
+        const now = new Date();
+        const cutoffDeadline = new Date(pickupDateTime.getTime() - shop.orderCutoffMinutes * 60 * 1000);
+
+        if (now > cutoffDeadline) {
+            const hoursBeforeNeeded = Math.ceil(shop.orderCutoffMinutes / 60);
+            return `Orders for this pickup time must be placed at least ${shop.orderCutoffMinutes} minutes (${hoursBeforeNeeded}h) before pickup. Please choose a later pickup time.`;
+        }
+    }
+
+    return null;
+}
 
 export async function createOrder(
     prevState: CreateOrderState,
@@ -187,12 +317,14 @@ export async function createOrder(
         return { error: 'Invalid pickup date/time.' };
     }
 
-    // Fetch cart items for this shop
+    // Fetch cart items for this shop (Rupiah items only — coin menus check out
+    // via createCoinOrder)
     const cartItems = await prisma.cartItem.findMany({
         where: {
             userId: session.user.id,
             meal: {
                 shopId: shopId,
+                isCoinMenu: false,
             },
         },
         include: {
@@ -217,108 +349,10 @@ export async function createOrder(
         return { error: 'No items in cart for this shop.' };
     }
 
-    // Validate daily order limit (Apply for both modes? Yes, usually)
-    if (shop.dailyOrderLimit > 0) {
-        
-        const startOfDay = new Date(pickupDateTime);
-        startOfDay.setHours(0, 0, 0, 0);
-        
-        const endOfDay = new Date(pickupDateTime);
-        endOfDay.setHours(23, 59, 59, 999);
-
-        const orderCount = await prisma.order.count({
-            where: {
-                shopId: shopId,
-                orderStatus: { not: 'CANCELLED' },
-                pickupDate: {
-                    gte: startOfDay,
-                    lte: endOfDay
-                }
-            }
-        });
-
-        if (orderCount >= shop.dailyOrderLimit) {
-            return { error: 'We’re fully booked for this date! We’d love to serve you another time—please check our calendar for the next available opening. 😊' };
-        }
-    }
-
-    // Validate Order Schedule (New Feature)
-    // We check against the CURRENT time when the user is trying to place the order.
-    if (shop.orderScheduleMode !== 'OFF' || shop.orderSchedules.length > 0) {
-        const now = new Date();
-        const currentBufferDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-        const currentDay = currentBufferDate.toLocaleDateString('en-US', { weekday: 'long' }); // e.g., "Monday"
-        
-        // Helper to convert HH:MM to minutes
-        const getMinutes = (timeStr: string) => {
-            const [h, m] = timeStr.split(':').map(Number);
-            return h * 60 + m;
-        };
-        
-        const currentMinutes = currentBufferDate.getHours() * 60 + currentBufferDate.getMinutes();
-
-        // Find schedules for today
-        const todaysSchedules = shop.orderSchedules.filter(s => s.day === currentDay);
-
-        if (shop.orderScheduleMode === 'OFF') {
-             // "Off Time" mode: User CANNOT buy if current time is WITHIN any of the ranges
-             for (const schedule of todaysSchedules) {
-                 const start = getMinutes(schedule.startTime);
-                 const end = getMinutes(schedule.endTime);
-                 
-                 if (currentMinutes >= start && currentMinutes < end) {
-                      return { error: `Sorry, this shop is currently not accepting orders (Off Time: ${schedule.startTime} - ${schedule.endTime}). Please try again later.` };
-                 }
-             }
-        } else if (shop.orderScheduleMode === 'ON') {
-             // "On Time" mode: User CAN ONLY buy if current time is WITHIN at least one of the ranges
-             // If there are no schedules for today, implies closed? Or open? Usually "On Time" implies detailed allow-list. 
-             // If no schedule for today -> assuming CLOSED for consistency with "Allowed Times".
-             
-             let isAllowed = false;
-             if (todaysSchedules.length > 0) {
-                 for (const schedule of todaysSchedules) {
-                     const start = getMinutes(schedule.startTime);
-                     const end = getMinutes(schedule.endTime);
-                     
-                     if (currentMinutes >= start && currentMinutes < end) {
-                         isAllowed = true;
-                         break;
-                     }
-                 }
-             }
-
-             if (!isAllowed) {
-                 return { error: `Sorry, this shop is currently closed. We only accept orders during our scheduled hours.` };
-             }
-        }
-    }
-
-    // Validate day-before cutoff (ONLY if using Label Pickup): orders for day D
-    // close X hours before D's midnight in the shop's timezone.
-    if (!shop.isUsingTimePickup && shop.labelOrderCutoffHours > 0) {
-        const dayStart = shopDayStartUtc(pickupDateStr, shop.timezone);
-        const deadline = new Date(dayStart.getTime() - shop.labelOrderCutoffHours * 60 * 60 * 1000);
-
-        if (new Date() > deadline) {
-            const deadlineHour = String((24 - (shop.labelOrderCutoffHours % 24)) % 24).padStart(2, '0');
-            return {
-                error: `Orders for this pickup day closed at ${deadlineHour}:00 the day before. Please choose a later pickup date.`,
-            };
-        }
-    }
-
-    // Validate order cutoff time (ONLY if using Time Pickup)
-    if (shop.isUsingTimePickup && shop.orderCutoffMinutes > 0) {
-        const now = new Date();
-        const cutoffDeadline = new Date(pickupDateTime.getTime() - shop.orderCutoffMinutes * 60 * 1000);
-        
-        if (now > cutoffDeadline) {
-            const hoursBeforeNeeded = Math.ceil(shop.orderCutoffMinutes / 60);
-            return { 
-                error: `Orders for this pickup time must be placed at least ${shop.orderCutoffMinutes} minutes (${hoursBeforeNeeded}h) before pickup. Please choose a later pickup time.` 
-            };
-        }
+    // Daily limit, order schedule, and cutoff rules (shared with coin checkout)
+    const timingError = await validateOrderTiming(shop, shopId, pickupDateStr, pickupDateTime);
+    if (timingError) {
+        return { error: timingError };
     }
 
     // Calculate total purely on server side to prevent tampering
@@ -470,12 +504,13 @@ export async function createOrder(
                 },
             });
 
-            // Clear cart for this shop
+            // Clear the Rupiah items for this shop (coin items stay for their own checkout)
             await tx.cartItem.deleteMany({
                 where: {
                     userId: session.user.id,
                     meal: {
                         shopId: shopId,
+                        isCoinMenu: false,
                     },
                 },
             });
@@ -554,6 +589,206 @@ Segera konfirmasi pesanan di aplikasi.`;
     } catch (e: any) {
         console.error('Midtrans/DB Error:', e);
         return { error: e.message || 'Failed to create order' };
+    }
+}
+
+/**
+ * Checkout for coin-priced menus: pays with the user's Lart Coin balance
+ * (no Midtrans). The shop receives Rupiah — totalAmount is locked at the
+ * current coin rate, and the normal PENDING→READY flow credits the wallet.
+ */
+export async function createCoinOrder(
+    prevState: CreateOrderState,
+    formData: FormData
+): Promise<CreateOrderState> {
+    const session = await auth();
+    if (!session?.user?.id) {
+        return { error: 'Unauthorized' };
+    }
+
+    const shopId = formData.get('shopId') as string;
+    const pickupDateStr = formData.get('pickupDate') as string; // YYYY-MM-DD
+    const pickupTime = formData.get('pickupTime') as string; // HH:MM
+    const pickupLabel = formData.get('pickupLabel') as string;
+
+    if (!shopId || !pickupDateStr) {
+        return { error: 'Please select a shop and pickup date.' };
+    }
+
+    const shop = await prisma.shop.findUnique({
+        where: { id: shopId },
+        select: {
+            orderCutoffMinutes: true,
+            labelOrderCutoffHours: true,
+            dailyOrderLimit: true,
+            name: true,
+            isUsingTimePickup: true,
+            orderScheduleMode: true,
+            orderSchedules: true,
+            timezone: true,
+        },
+    });
+
+    if (!shop) {
+        return { error: 'Shop not found.' };
+    }
+
+    if (shop.isUsingTimePickup && !pickupTime) {
+        return { error: 'Please select a pickup time.' };
+    }
+    if (!shop.isUsingTimePickup && !pickupLabel) {
+        return { error: 'Please select a pickup time.' };
+    }
+
+    const timeString = shop.isUsingTimePickup ? pickupTime : '12:00';
+    const pickupDateTime = new Date(`${pickupDateStr}T${timeString}:00`);
+    if (isNaN(pickupDateTime.getTime())) {
+        return { error: 'Invalid pickup date/time.' };
+    }
+
+    const timingError = await validateOrderTiming(shop, shopId, pickupDateStr, pickupDateTime);
+    if (timingError) {
+        return { error: timingError };
+    }
+
+    // Coin items only (Rupiah items check out via createOrder)
+    const cartItems = await prisma.cartItem.findMany({
+        where: {
+            userId: session.user.id,
+            meal: { shopId: shopId, isCoinMenu: true },
+        },
+        include: { meal: true },
+    });
+
+    if (cartItems.length === 0) {
+        return { error: 'No coin items in cart for this shop.' };
+    }
+
+    const totalCoins = cartItems.reduce(
+        (acc, item) => acc + item.meal.coinPrice * item.quantity,
+        0
+    );
+    if (totalCoins <= 0) {
+        return { error: 'Invalid coin total.' };
+    }
+
+    const midtransOrderId = `COIN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    try {
+        const order = await prisma.$transaction(async (tx) => {
+            // Rate is locked now: the shop is credited Rupiah at today's coin value.
+            const config = await getOrCreateLartCoinConfig(tx);
+            const totalRupiah = totalCoins * config.coinValueRupiah;
+
+            const user = await tx.user.findUnique({
+                where: { id: session.user.id },
+                select: { lartCoinBalance: true },
+            });
+            if (!user || user.lartCoinBalance < totalCoins) {
+                throw new Error(
+                    `Not enough Lart Coins. You need 🪙 ${totalCoins} but only have 🪙 ${user?.lartCoinBalance ?? 0}.`
+                );
+            }
+
+            const createdOrder = await tx.order.create({
+                data: {
+                    userId: session.user.id,
+                    shopId: shopId,
+                    orderStatus: 'PENDING',
+                    paymentStatus: 'PAID',
+                    paymentTime: new Date(),
+                    paymentMethod: 'lart_coin',
+                    midtransOrderId,
+                    totalAmount: totalRupiah,
+                    paidWithCoins: totalCoins,
+                    snapToken: '',
+                    pickupDate: pickupDateTime,
+                    pickupLabel: pickupLabel || null,
+                    orderItems: {
+                        create: cartItems.map((item) => ({
+                            mealId: item.mealId,
+                            mealName: item.meal.name,
+                            quantity: item.quantity,
+                            // Rupiah equivalent per unit at the locked rate
+                            price: item.meal.coinPrice * config.coinValueRupiah,
+                            notes: item.notes,
+                        })),
+                    },
+                },
+            });
+
+            await tx.user.update({
+                where: { id: session.user.id },
+                data: { lartCoinBalance: { decrement: totalCoins } },
+            });
+            await tx.lartCoinTransaction.create({
+                data: {
+                    userId: session.user.id,
+                    orderId: createdOrder.id,
+                    type: 'SPEND',
+                    coins: -totalCoins,
+                    description: `Spent on order #${createdOrder.id.slice(-6).toUpperCase()} at ${shop.name}`,
+                },
+            });
+
+            await tx.cartItem.deleteMany({
+                where: {
+                    userId: session.user.id,
+                    meal: { shopId: shopId, isCoinMenu: true },
+                },
+            });
+
+            return createdOrder;
+        });
+
+        // Coin orders are PAID immediately, so they enter the live queue now.
+        emitQueueUpdate(shopId, order.pickupLabel, order.pickupDate);
+
+        // Notify shop staff (fire and forget), mirroring the paid-order webhook message.
+        try {
+            const shopStaff = await prisma.userShopRole.findMany({
+                where: { shopId: shopId, getNotification: true },
+                include: { user: { select: { phone: true, name: true } } },
+            });
+
+            const itemsSummary = cartItems
+                .map((item) => `• ${item.quantity}x ${item.meal.name}`)
+                .join('\n');
+
+            const formattedPickup = pickupLabel
+                ? pickupLabel
+                : pickupDateTime.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lunch.felitech.site';
+
+            const message = `🛒 *Pesanan Baru - DIBAYAR DENGAN LART COIN!*
+
+👤 Pemesan: ${session.user.name || 'Customer'}
+📅 Ambil: ${formattedPickup}
+
+📋 *Pesanan:*
+${itemsSummary}
+
+🪙 *Total: ${totalCoins} Lart Coin*
+
+✅ Pembayaran sudah dikonfirmasi. Segera proses pesanan!
+🔗 Shop Orders: ${appUrl}/dashboard/shop/shopOrders`;
+
+            for (const staff of shopStaff) {
+                if (staff.user.phone) {
+                    sendWhatsApp(staff.user.phone, message).catch((err) => {
+                        console.error('Failed to send coin-order notification to staff:', err);
+                    });
+                }
+            }
+        } catch (notifError) {
+            console.error('Failed to send coin-order notification:', notifError);
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        console.error('Coin order error:', e);
+        return { error: e.message || 'Failed to create coin order' };
     }
 }
 

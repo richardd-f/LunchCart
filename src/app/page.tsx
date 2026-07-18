@@ -78,6 +78,8 @@ export default async function Home({ searchParams }: HomeProps) {
               id: m.id,
               name: m.name,
               price: Number(m.price),
+              isCoinMenu: m.isCoinMenu,
+              coinPrice: m.coinPrice,
               hasActiveDiscount: m.discounts.length > 0,
               discountPreview: getMealDiscountPreview(
                 Number(m.price),

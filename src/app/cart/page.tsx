@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import { getCartItems, createOrder, updateCartItemQuantity, CartItemWithDetails } from '@/features/cart/action';
+import { getCartItems, createOrder, createCoinOrder, updateCartItemQuantity, CartItemWithDetails } from '@/features/cart/action';
 import {
   calculateOrderDiscounts,
   DiscountableItem,
@@ -183,8 +183,14 @@ export default function CartPage() {
     executeQuantityUpdate(itemId, newQuantity);
   };
 
+  // Rupiah discount math only applies to Rupiah items; coin items are summed separately.
+  const getRupiahItems = (shopId: string) => (groupedItems[shopId] || []).filter((i) => !i.meal.isCoinMenu);
+  const getCoinItems = (shopId: string) => (groupedItems[shopId] || []).filter((i) => i.meal.isCoinMenu);
+  const getCoinTotal = (shopId: string) =>
+    getCoinItems(shopId).reduce((acc, i) => acc + i.meal.coinPrice * i.quantity, 0);
+
   const getDiscountResult = (shopId: string): DiscountResult => {
-    const items = groupedItems[shopId] || [];
+    const items = getRupiahItems(shopId);
     const ruleMap = new Map<string, DiscountRule>();
     const discountItems: DiscountableItem[] = items.map((item) => {
       const basePrice = Number(item.meal.price);
@@ -274,6 +280,52 @@ export default function CartPage() {
     }
   };
 
+  const handleCoinOrder = async () => {
+    if (!selectedShopId) {
+      toast.error('Please select a shop to order from');
+      return;
+    }
+
+    const shop = groupedItems[selectedShopId][0].meal.shop;
+
+    if (!pickupDate) {
+      toast.error('Please select pickup date');
+      return;
+    }
+    if (shop.isUsingTimePickup && !pickupTime) {
+      toast.error('Please select pickup time');
+      return;
+    }
+    if (!shop.isUsingTimePickup && !pickupLabel) {
+      toast.error('Please select a pickup time');
+      return;
+    }
+
+    setIsProcessing(true);
+    const formData = new FormData();
+    formData.append('shopId', selectedShopId);
+    formData.append('pickupDate', pickupDate);
+    formData.append('pickupTime', pickupTime);
+    formData.append('pickupLabel', pickupLabel);
+
+    try {
+      const result = await createCoinOrder({}, formData);
+
+      if (result.error) {
+        toast.error(result.error);
+        setIsProcessing(false);
+        return;
+      }
+
+      toast.success('Paid with Lart Coin!');
+      router.push('/myOrders');
+    } catch (error) {
+      console.error(error);
+      toast.error('Something went wrong');
+      setIsProcessing(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -324,6 +376,9 @@ export default function CartPage() {
             const shop = getShopDetails(shopId);
             const isSelected = selectedShopId === shopId;
             const discountResult = getDiscountResult(shopId);
+            const coinTotal = getCoinTotal(shopId);
+            const hasRupiahItems = getRupiahItems(shopId).length > 0;
+            const hasCoinItems = coinTotal > 0;
 
             return (
               <div 
@@ -378,7 +433,12 @@ export default function CartPage() {
                                     <div className="flex justify-between text-base font-medium text-gray-900">
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-bold">{item.meal.name}</h3>
-                                            {item.meal.discounts.length > 0 && (
+                                            {item.meal.isCoinMenu && (
+                                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                                                    🪙 Coin
+                                                </span>
+                                            )}
+                                            {!item.meal.isCoinMenu && item.meal.discounts.length > 0 && (
                                                 <span className="rounded-full bg-[#F97352]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#F97352]">
                                                     Promo
                                                 </span>
@@ -386,7 +446,7 @@ export default function CartPage() {
                                         </div>
                                         <div className="ml-4 text-sm font-normal">
                                           <span className="text-gray-400">
-                                            {formatIDR(Number(item.meal.price))}
+                                            {item.meal.isCoinMenu ? `🪙 ${item.meal.coinPrice}` : formatIDR(Number(item.meal.price))}
                                           </span>
                                         </div>
                                     </div>
@@ -427,10 +487,12 @@ export default function CartPage() {
                                             +
                                         </button>
                                     </div>
-                                    <p className="font-bold text-gray-900 text-lg">
-                                        {formatIDR(
-                                            (Number(item.meal.price) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
-                                        )}
+                                    <p className={`font-bold text-lg ${item.meal.isCoinMenu ? 'text-amber-600' : 'text-gray-900'}`}>
+                                        {item.meal.isCoinMenu
+                                            ? `🪙 ${item.meal.coinPrice * item.quantity}`
+                                            : formatIDR(
+                                                (Number(item.meal.price) + item.options.reduce((acc, opt) => acc + Number(opt.mealOptionValue.price), 0)) * item.quantity
+                                              )}
                                     </p>
                                 </div>
                             </div>
@@ -500,35 +562,63 @@ export default function CartPage() {
                             </div>
                         </div>
                         
-                        <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
-                             <div className="flex items-center justify-between text-sm text-gray-600">
-                                <span>Subtotal</span>
-                                <span>{formatIDR(discountResult.subtotal)}</span>
-                             </div>
-                             {discountResult.applied.map((d) => (
-                                <div key={d.id} className="flex items-center justify-between text-sm text-green-600">
-                                   <span className="flex items-center gap-1">
-                                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 014 12V7a4 4 0 014-4z" />
-                                      </svg>
-                                      {d.name}
-                                   </span>
-                                   <span>-{formatIDR(d.amount)}</span>
-                                </div>
-                             ))}
-                             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                <div className="text-base font-medium text-gray-900">Total</div>
-                                <div className="text-xl font-bold text-[#F97352]">{formatIDR(discountResult.total)}</div>
-                             </div>
-                        </div>
+                        {hasRupiahItems && (
+                          <>
+                            <div className="pt-4 border-t border-gray-200 mt-4 space-y-2">
+                                 <div className="flex items-center justify-between text-sm text-gray-600">
+                                    <span>Subtotal</span>
+                                    <span>{formatIDR(discountResult.subtotal)}</span>
+                                 </div>
+                                 {discountResult.applied.map((d) => (
+                                    <div key={d.id} className="flex items-center justify-between text-sm text-green-600">
+                                       <span className="flex items-center gap-1">
+                                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 014 12V7a4 4 0 014-4z" />
+                                          </svg>
+                                          {d.name}
+                                       </span>
+                                       <span>-{formatIDR(d.amount)}</span>
+                                    </div>
+                                 ))}
+                                 <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                    <div className="text-base font-medium text-gray-900">Total</div>
+                                    <div className="text-xl font-bold text-[#F97352]">{formatIDR(discountResult.total)}</div>
+                                 </div>
+                            </div>
 
-                        <button
-                            onClick={handleOrder}
-                            disabled={isProcessing}
-                            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#F97352] hover:bg-[#e06646] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F97352] disabled:opacity-75 disabled:cursor-not-allowed"
-                        >
-                            {isProcessing ? 'Processing...' : 'Place Order'}
-                        </button>
+                            <button
+                                onClick={handleOrder}
+                                disabled={isProcessing}
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#F97352] hover:bg-[#e06646] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F97352] disabled:opacity-75 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? 'Processing...' : 'Place Order'}
+                            </button>
+                          </>
+                        )}
+
+                        {hasCoinItems && (
+                          <>
+                            <div className={`pt-4 mt-4 space-y-2 border-t ${hasRupiahItems ? 'border-dashed border-amber-200' : 'border-gray-200'}`}>
+                                 <div className="flex items-center justify-between">
+                                    <div className="text-base font-medium text-gray-900">Total (Lart Coin)</div>
+                                    <div className="text-xl font-bold text-amber-600">🪙 {coinTotal}</div>
+                                 </div>
+                                 {hasRupiahItems && (
+                                    <p className="text-xs text-gray-500">
+                                        Coin items are paid separately with your Lart Coin balance.
+                                    </p>
+                                 )}
+                            </div>
+
+                            <button
+                                onClick={handleCoinOrder}
+                                disabled={isProcessing}
+                                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 disabled:opacity-75 disabled:cursor-not-allowed"
+                            >
+                                {isProcessing ? 'Processing...' : `Pay 🪙 ${coinTotal} with Lart Coin`}
+                            </button>
+                          </>
+                        )}
                     </div>
                 )}
               </div>

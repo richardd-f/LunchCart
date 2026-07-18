@@ -10,6 +10,8 @@ interface ShopSectionProps {
     id: string;
     name: string;
     price: number | string;
+    isCoinMenu?: boolean;
+    coinPrice?: number;
     hasActiveDiscount?: boolean;
     discountPreview?: MealDiscountPreview | null;
     images: Array<{ imagePath: string }>;
@@ -48,6 +50,8 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
               <MenuCard
                 name={meal.name}
                 price={meal.price.toString()}
+                isCoinMenu={meal.isCoinMenu}
+                coinPrice={meal.coinPrice}
                 hasActiveDiscount={meal.hasActiveDiscount}
                 discountPreview={meal.discountPreview}
                 imageUrl={meal.images[0]?.imagePath}
@@ -66,6 +70,8 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
                 <MenuCard
                   name={meal.name}
                   price={meal.price.toString()}
+                  isCoinMenu={meal.isCoinMenu}
+                  coinPrice={meal.coinPrice}
                   hasActiveDiscount={meal.hasActiveDiscount}
                   discountPreview={meal.discountPreview}
                   imageUrl={meal.images[0]?.imagePath}

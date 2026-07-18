@@ -5,12 +5,14 @@ import { MealDiscountPreview } from '@/features/discounts/getMealDiscountPreview
 interface MenuCardProps {
   name: string;
   price: number | string;
+  isCoinMenu?: boolean;
+  coinPrice?: number;
   hasActiveDiscount?: boolean;
   discountPreview?: MealDiscountPreview | null;
   imageUrl?: string | null;
 }
 
-export function MenuCard({ name, price, hasActiveDiscount, discountPreview, imageUrl }: MenuCardProps) {
+export function MenuCard({ name, price, isCoinMenu, coinPrice, hasActiveDiscount, discountPreview, imageUrl }: MenuCardProps) {
   // Format price helper
   const formatPrice = (amount: number | string) => {
     return new Intl.NumberFormat('id-ID', {
@@ -40,7 +42,7 @@ export function MenuCard({ name, price, hasActiveDiscount, discountPreview, imag
           </div>
         )}
 
-        {(discountPreview || hasActiveDiscount) && (
+        {!isCoinMenu && (discountPreview || hasActiveDiscount) && (
           <span className="absolute left-2 top-2 rounded-full bg-[#F97352] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
             {discountPreview ? `${discountPreview.percentage}% OFF` : 'Promo'}
           </span>
@@ -52,7 +54,9 @@ export function MenuCard({ name, price, hasActiveDiscount, discountPreview, imag
           {name}
         </h3>
 
-        {discountPreview ? (
+        {isCoinMenu ? (
+          <p className="mt-1 text-sm font-bold text-amber-600 md:text-lg">🪙 {coinPrice ?? 0}</p>
+        ) : discountPreview ? (
           <div className="mt-1 flex flex-col leading-tight">
             <span className="text-[11px] font-medium text-gray-400 line-through md:text-xs">
               {formatPrice(discountPreview.originalPrice)}

@@ -101,7 +101,11 @@ export default function MenuCard({ meal, onEdit, onDelete, onToggle }: MenuCardP
             <div className="p-4 flex flex-col flex-grow">
                 <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{meal.name}</h3>
-                    <span className="text-orange-600 font-bold">Rp {meal.price.toLocaleString('id-ID')}</span>
+                    {meal.isCoinMenu ? (
+                        <span className="text-amber-600 font-bold whitespace-nowrap">🪙 {meal.coinPrice}</span>
+                    ) : (
+                        <span className="text-orange-600 font-bold">Rp {meal.price.toLocaleString('id-ID')}</span>
+                    )}
                 </div>
                 
                 <p className="text-gray-500 text-sm line-clamp-2 mb-4 flex-grow">{meal.description}</p>

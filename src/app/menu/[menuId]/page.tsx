@@ -56,7 +56,11 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
                                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">{meal.name}</h1>
                             </div>
                             
-                            {meal.discountPreview ? (
+                            {meal.isCoinMenu ? (
+                                <p className="text-2xl font-bold text-amber-600">
+                                    🪙 {meal.coinPrice} Lart Coin
+                                </p>
+                            ) : meal.discountPreview ? (
                                 <div className="space-y-1">
                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                         <p className="text-2xl font-bold text-[#F97352]">

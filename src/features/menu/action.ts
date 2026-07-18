@@ -21,6 +21,8 @@ export interface MealWithDetails {
     name: string
     description: string
     price: number
+    isCoinMenu: boolean
+    coinPrice: number
     hasActiveDiscount: boolean
     discountPreview: MealDiscountPreview | null
     // category: "MEAL" | "SNACK" | "DRINK" | "DESSERT" | "TOOL" | "SAUCE"

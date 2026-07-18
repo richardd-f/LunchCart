@@ -35,6 +35,8 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(0);
+  const [isCoinMenu, setIsCoinMenu] = useState(false);
+  const [coinPrice, setCoinPrice] = useState<number>(1);
   const [category, setCategory] = useState<MealCategory>('MEAL');
   const [isAvailable, setIsAvailable] = useState(true);
   const [allowNotes, setAllowNotes] = useState(false);
@@ -69,6 +71,8 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
         setName(initialData.name);
         setDescription(initialData.description);
         setPrice(initialData.price);
+        setIsCoinMenu(initialData.isCoinMenu ?? false);
+        setCoinPrice(initialData.coinPrice > 0 ? initialData.coinPrice : 1);
         setCategory(initialData.category);
         setIsAvailable(initialData.isAvailable);
         setAllowNotes(initialData.allowNotes ?? false);
@@ -98,6 +102,8 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
         setName('');
         setDescription('');
         setPrice(0);
+        setIsCoinMenu(false);
+        setCoinPrice(1);
         setCategory('MEAL');
         setIsAvailable(true);
         setAllowNotes(false);
@@ -132,13 +138,15 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
     const payload: CreateMealInput = {
       name,
       description,
-      price,
+      price: isCoinMenu ? 0 : price,
+      isCoinMenu,
+      coinPrice: isCoinMenu ? coinPrice : 0,
       category,
       isAvailable,
       allowNotes,
       images: processedImages,
-      optionGroups,
-      discountIds: selectedDiscountIds,
+      optionGroups: isCoinMenu ? [] : optionGroups,
+      discountIds: isCoinMenu ? [] : selectedDiscountIds,
     };
 
     let result: ActionResult<SerializableMeal>;
@@ -265,6 +273,55 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
                 </select>
               </div>
 
+              {/* Price mode: Rupiah vs Lart Coin */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Price in Lart Coin</label>
+                  <p className="text-xs text-gray-500">
+                    Coin menus are paid with Lart Coins (no discounts or options).
+                  </p>
+                </div>
+                <div className="flex items-center bg-gray-100 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setIsCoinMenu(false)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      !isCoinMenu ? 'bg-white text-[#F97352] shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                  >
+                    Rupiah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsCoinMenu(true)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      isCoinMenu ? 'bg-white text-amber-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                  >
+                    🪙 Lart Coin
+                  </button>
+                </div>
+              </div>
+
+              {isCoinMenu ? (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Price (Lart Coin)</label>
+                  <div className="relative mt-1 rounded-md shadow-sm">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <span className="text-gray-500 sm:text-sm">🪙</span>
+                    </div>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      required
+                      value={coinPrice}
+                      onChange={(e) => setCoinPrice(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="block w-full rounded-md border-gray-300 pl-9 focus:border-[#F97352] focus:ring-1 focus:ring-[#F97352] focus:outline-none p-2 border bg-gray-50/50"
+                    />
+                  </div>
+                </div>
+              ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-700">Price</label>
                 <div className="relative mt-1 rounded-md shadow-sm">
@@ -282,7 +339,9 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
                   />
                 </div>
               </div>
+              )}
 
+              {!isCoinMenu && (
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Discounts{' '}
@@ -330,6 +389,7 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
                   </div>
                 )}
               </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">Description</label>
@@ -399,9 +459,11 @@ export default function MenuFormModal({ isOpen, onClose, initialData, shopDiscou
             </div>
           </div>
           
-          <div className="pt-6">
-              <OptionManager groups={optionGroups} onChange={setOptionGroups} />
-          </div>
+          {!isCoinMenu && (
+            <div className="pt-6">
+                <OptionManager groups={optionGroups} onChange={setOptionGroups} />
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-4 sticky bottom-0 bg-white pb-2">
             <button

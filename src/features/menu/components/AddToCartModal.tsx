@@ -123,7 +123,9 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                     <div>
                         <h3 className="font-semibold text-gray-800">{meal.name}</h3>
                         <div className="flex flex-wrap items-center gap-2">
-                            {meal.discountPreview ? (
+                            {meal.isCoinMenu ? (
+                                <p className="text-amber-600 font-bold">🪙 {meal.coinPrice} Lart Coin</p>
+                            ) : meal.discountPreview ? (
                                 <>
                                     <p className="text-[#F97352] font-bold">Rp {meal.discountPreview.finalPrice.toLocaleString('id-ID')}</p>
                                     <p className="text-sm font-medium text-gray-400 line-through">Rp {meal.discountPreview.originalPrice.toLocaleString('id-ID')}</p>
@@ -244,7 +246,9 @@ export default function AddToCartModal({ meal, isOpen, onClose }: AddToCartModal
                             <>
                                 <span>Add to Cart</span>
                                 <span className="bg-white/20 px-2 py-0.5 rounded text-sm">
-                                    Rp {calculateTotal().toLocaleString('id-ID')}
+                                    {meal.isCoinMenu
+                                        ? `🪙 ${meal.coinPrice * quantity}`
+                                        : `Rp ${calculateTotal().toLocaleString('id-ID')}`}
                                 </span>
                             </>
                         )}

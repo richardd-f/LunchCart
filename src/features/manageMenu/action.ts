@@ -51,6 +51,8 @@ export interface SerializableMeal {
   name: string;
   description: string;
   price: number; // Changed from Decimal
+  isCoinMenu: boolean;
+  coinPrice: number;
   category: MealCategory;
   isAvailable: boolean;
   orderNumber: number;
@@ -90,6 +92,8 @@ export type CreateMealInput = {
   name: string;
   description: string;
   price: number;
+  isCoinMenu: boolean;
+  coinPrice: number;
   category: MealCategory;
   isAvailable: boolean;
   allowNotes: boolean;
@@ -144,6 +148,8 @@ function serializeMeal(meal: MealPayload): SerializableMeal {
     name: meal.name,
     description: meal.description,
     price: Number(meal.price),
+    isCoinMenu: meal.isCoinMenu,
+    coinPrice: meal.coinPrice,
     category: meal.category,
     isAvailable: meal.isAvailable,
     orderNumber: meal.orderNumber,
@@ -235,6 +241,16 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
     const shopId = await getOwnerShopId(session.user.id);
     if (!shopId) return { success: false, error: 'Shop not found' };
 
+    // Coin menus: integer coin price, no Rupiah price, no discounts, no options.
+    const isCoinMenu = data.isCoinMenu ?? false;
+    const coinPrice = Math.max(0, Math.floor(data.coinPrice ?? 0));
+    if (isCoinMenu && coinPrice < 1) {
+      return { success: false, error: 'Coin price must be at least 1 Lart Coin' };
+    }
+    if (isCoinMenu) {
+      data = { ...data, price: 0, discountIds: [], optionGroups: [] };
+    }
+
     const discountIds = await filterShopDiscountIds(shopId, data.discountIds);
 
     // Transaction to ensure atomic creation
@@ -246,6 +262,8 @@ export async function createMeal(data: CreateMealInput): Promise<ActionResult<Se
           name: data.name,
           description: data.description,
           price: data.price,
+          isCoinMenu,
+          coinPrice: isCoinMenu ? coinPrice : 0,
           category: data.category,
           isAvailable: data.isAvailable,
           allowNotes: data.allowNotes,
@@ -320,6 +338,16 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
        return { success: false, error: 'Meal not found or unauthorized' };
     }
 
+    // Coin menus: integer coin price, no Rupiah price, no discounts, no options.
+    const isCoinMenu = data.isCoinMenu ?? existingMeal.isCoinMenu;
+    const coinPrice = Math.max(0, Math.floor(data.coinPrice ?? existingMeal.coinPrice));
+    if (isCoinMenu && coinPrice < 1) {
+      return { success: false, error: 'Coin price must be at least 1 Lart Coin' };
+    }
+    if (isCoinMenu) {
+      data = { ...data, price: 0, discountIds: [], optionGroups: [] };
+    }
+
     const discountIds =
       data.discountIds !== undefined
         ? await filterShopDiscountIds(shopId, data.discountIds)
@@ -333,6 +361,8 @@ export async function updateMeal(data: UpdateMealInput): Promise<ActionResult<Se
           name: data.name,
           description: data.description,
           price: data.price,
+          isCoinMenu,
+          coinPrice: isCoinMenu ? coinPrice : 0,
           category: data.category,
           isAvailable: data.isAvailable,
           allowNotes: data.allowNotes,
@@ -481,11 +511,20 @@ export async function bulkAdjustMealPrices(
     const result = await prisma.$transaction(async (tx) => {
       const meals = await tx.meal.findMany({
         where: { id: { in: input.mealIds }, shopId },
-        select: { id: true, name: true, price: true },
+        select: { id: true, name: true, price: true, isCoinMenu: true },
       });
 
       if (meals.length !== input.mealIds.length) {
         return { error: 'Some menus were not found or belong to another shop.' };
+      }
+
+      // Coin menus have no Rupiah price to adjust.
+      const coinMenus = meals.filter((m) => m.isCoinMenu);
+      if (coinMenus.length > 0) {
+        const names = coinMenus.map((m) => m.name).join(', ');
+        return {
+          error: `Coin menus cannot be price-adjusted in Rupiah: ${names}. Nothing was changed.`,
+        };
       }
 
       // Block the whole edit if any resulting price would be <= 0.
