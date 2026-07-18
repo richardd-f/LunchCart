@@ -6,6 +6,7 @@ import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client"
 import { sendWhatsApp } from "@/lib/gowa"
 import { emitQueueUpdate } from "@/lib/queueEvents"
 import { revalidatePath } from "next/cache"
+import { revokeCoinsForOrder } from "@/features/lartCoin/coins"
 
 // Types for filter parameters
 export interface ShopOrderFilters {
@@ -393,6 +394,15 @@ export async function updateOrderStatus(orderId: string, newStatus: OrderStatus)
                     },
                 },
             })
+        })
+    } else if (newStatus === OrderStatus.CANCELLED && order.paymentStatus === PaymentStatus.PAID) {
+        // Cancelling a paid order also takes back the Lart Coins it earned.
+        await prisma.$transaction(async (tx) => {
+            await tx.order.update({
+                where: { id: orderId },
+                data: { orderStatus: newStatus },
+            })
+            await revokeCoinsForOrder(tx, { id: order.id, userId: order.userId })
         })
     } else {
         // For other status transitions, just update the order

@@ -59,6 +59,12 @@ enum TransactionType {
   debit
 }
 
+enum LartCoinTransactionType {
+  EARN
+  SPEND
+  ADJUST
+}
+
 // --------------------------------------
 // Models
 // --------------------------------------
@@ -73,19 +79,51 @@ model User {
   emailVerified    DateTime? @map("email_verified_at")
   password         String?
   role             UserRole  @default(USER)
+  lartCoinBalance  Int       @default(0) @map("lart_coin_balance")
   remindPhoneSetup Boolean   @default(true) @map("remind_phone_setup")
   rememberToken    String?   @map("remember_token")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  cartItems CartItem[]
-  userRoles UserShopRole[]
-  orders    Order[]
-  accounts  Account[]
-  sessions  Session[]
+  cartItems            CartItem[]
+  userRoles            UserShopRole[]
+  orders               Order[]
+  accounts             Account[]
+  sessions             Session[]
+  lartCoinTransactions LartCoinTransaction[]
 
   @@map("users")
+}
+
+// Singleton (id = "singleton"): global Lart Coin rates, editable by ADMIN.
+model LartCoinConfig {
+  id                    String   @id @default("singleton")
+  // Rupiah of purchases needed to earn 1 Lart Coin.
+  purchaseAmountPerCoin Int      @default(10000) @map("purchase_amount_per_coin")
+  // Rupiah value of 1 Lart Coin when spent / converted for shops.
+  coinValueRupiah       Int      @default(1000) @map("coin_value_rupiah")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("lart_coin_config")
+}
+
+model LartCoinTransaction {
+  id          String                  @id @default(cuid())
+  userId      String                  @map("user_id")
+  orderId     String?                 @map("order_id")
+  type        LartCoinTransactionType
+  // Signed delta: positive for EARN, negative for SPEND/ADJUST.
+  coins       Int
+  description String?                 @db.Text
+  createdAt   DateTime                @default(now()) @map("created_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@map("lart_coin_transactions")
 }
 
 model Account {
@@ -382,10 +420,11 @@ model Order {
   updatedAt             DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  shop         Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  orderItems   OrderItem[]
-  transactions Transaction[]
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop              Shop                  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderItems        OrderItem[]
+  transactions      Transaction[]
+  lartCoinTransactions LartCoinTransaction[]
 
   @@map("orders")
 }

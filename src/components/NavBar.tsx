@@ -10,7 +10,7 @@ import { NavDropdown } from './NavDropdown';
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { data: session, status } = useSession();
-  const [navInfo, setNavInfo] = useState<UserNavInfo>({ isLoggedIn: false, hasShopRole: false, isShopOwner: false });
+  const [navInfo, setNavInfo] = useState<UserNavInfo>({ isLoggedIn: false, hasShopRole: false, isShopOwner: false, lartCoinBalance: 0 });
   const [mobileShopOpen, setMobileShopOpen] = useState(false);
   const [mobileAdminOpen, setMobileAdminOpen] = useState(false);
 
@@ -18,7 +18,7 @@ export function NavBar() {
     if (session?.user) {
       getUserNavInfo().then(setNavInfo);
     } else {
-      setNavInfo({ isLoggedIn: false, hasShopRole: false, isShopOwner: false });
+      setNavInfo({ isLoggedIn: false, hasShopRole: false, isShopOwner: false, lartCoinBalance: 0 });
     }
   }, [session]);
 
@@ -61,6 +61,7 @@ export function NavBar() {
                 <NavDropdown label={'Admin'} items={[
                     {label: "Money Withdrawal", href: '/dashboard/admin/withdraw'},
                     {label: "Admin Management", href: '/dashboard/admin/manageAdmin'},
+                    {label: "Lart Coin Rates", href: '/dashboard/admin/lartCoin'},
                   ]}
                 />
               )}
@@ -112,6 +113,10 @@ export function NavBar() {
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-medium text-gray-900 truncate">{session.user.name}</p>
                     <p className="text-xs text-gray-500 truncate">{session.user.email}</p>
+                    <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-amber-600">
+                      <span aria-hidden="true">🪙</span>
+                      {navInfo.lartCoinBalance} Lart Coin
+                    </p>
                   </div>
                   <Link
                     href="/settings"
@@ -259,12 +264,19 @@ export function NavBar() {
                 >
                   Money Withdrawal
                 </Link>
-                <Link 
-                  href="/dashboard/admin/manageAdmin" 
+                <Link
+                  href="/dashboard/admin/manageAdmin"
                   className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Admin Management
+                </Link>
+                <Link
+                  href="/dashboard/admin/lartCoin"
+                  className="block pl-6 pr-3 py-2 rounded-md text-sm font-medium hover:bg-white/10 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Lart Coin Rates
                 </Link>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { PaymentStatus, OrderStatus } from "@prisma/client"
 import { sendWhatsApp } from "@/lib/gowa"
 import { emitQueueUpdate } from "@/lib/queueEvents"
+import { awardCoinsForOrder } from "@/features/lartCoin/coins"
 
 export async function updatePaymentStatus(
     midtransOrderId: string,
@@ -92,9 +93,23 @@ export async function updatePaymentStatus(
     }
 
     try {
-        const updatedOrder = await prisma.order.update({
-            where: { id: order.id },
-            data: dataToUpdate,
+        const updatedOrder = await prisma.$transaction(async (tx) => {
+            const updated = await tx.order.update({
+                where: { id: order.id },
+                data: dataToUpdate,
+            })
+
+            // Earn Lart Coins the moment a Rupiah payment settles. The
+            // status-unchanged early-return above makes this run once per order.
+            if (newPaymentStatus === PaymentStatus.PAID) {
+                await awardCoinsForOrder(tx, {
+                    id: order.id,
+                    userId: order.userId,
+                    totalAmount: Number(order.totalAmount),
+                })
+            }
+
+            return updated
         })
         console.log(`Order ${order.id} updated to ${newPaymentStatus}`)
 
