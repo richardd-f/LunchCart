@@ -6,7 +6,6 @@ import MenuImages from '@/features/menu/components/MenuImages'
 import ReviewSection from '@/features/menu/components/ReviewSection'
 import AddToCartButtonWrapper from './AddToCartButtonWrapper'
 import BackButton from './BackButton'
-import { Reveal } from '@/components/Reveal'
 
 export default async function MenuDetailsPage({ params }: { params: Promise<{ menuId: string }> }) {
     const { menuId } = await params
@@ -28,12 +27,12 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
                     {/* Left: Images */}
-                    <Reveal y={16}>
+                    <div>
                         <MenuImages images={meal.images} mealName={meal.name} />
-                    </Reveal>
+                    </div>
 
                     {/* Right: Details */}
-                    <Reveal y={16} delay={0.1} className="px-4 py-6 md:py-0 space-y-6">
+                    <div className="px-4 py-6 md:py-0 space-y-6">
                         {/* Shop Header */}
                         <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
                              <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-200 shadow-sm border border-gray-100">
@@ -101,7 +100,7 @@ export default async function MenuDetailsPage({ params }: { params: Promise<{ me
 
                         {/* Reviews */}
                         <ReviewSection latestReview={meal.orderItems[0]} />
-                    </Reveal>
+                    </div>
                 </div>
             </div>
         </div>

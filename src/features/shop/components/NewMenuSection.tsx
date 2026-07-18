@@ -1,6 +1,5 @@
 import { ShopMenuWithImages } from '../actions';
 import { MenuCard } from './MenuCard';
-import { Reveal } from '@/components/Reveal';
 
 interface NewMenuSectionProps {
   menus: ShopMenuWithImages[];
@@ -54,18 +53,15 @@ export function NewMenuSection({ menus }: NewMenuSectionProps) {
           {/* Horizontal Scroll Area */}
           <div className="w-full">
             <div className="flex gap-5 justify-start overflow-x-auto pb-6 px-6 snap-x snap-mandatory pt-2 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {menus.map((menu, i) => (
-                <Reveal
+              {menus.map((menu) => (
+                <div
                   key={menu.id}
-                  delay={i * 0.07}
-                  y={24}
-                  immediate
                   className="min-w-[80vw] w-[80vw] snap-center sm:min-w-[300px] sm:w-[300px] md:min-w-[340px] md:w-[340px]"
                 >
                   <div className="transform rounded-4xl transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/20">
                     <MenuCard menu={menu} />
                   </div>
-                </Reveal>
+                </div>
               ))}
               {/* <div className="w-2 shrink-0" /> */}
             </div>

@@ -4,7 +4,6 @@ import { MENU_PAGE_SIZE } from '@/features/shop/pagination';
 import { ShopHeader } from '@/features/shop/components/ShopHeader';
 import { NewMenuSection } from '@/features/shop/components/NewMenuSection';
 import { MenuGrid } from '@/features/shop/components/MenuGrid';
-import { Reveal } from '@/components/Reveal';
 
 interface PageProps {
   params: Promise<{ shopId: string }>;
@@ -37,26 +36,17 @@ export default async function ShopPage({ params }: PageProps) {
     <div className="flex flex-1 flex-col pb-20">
       <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Shop Header Section */}
-        <Reveal y={16} immediate>
-          <ShopHeader shop={shop} />
-        </Reveal>
+        <ShopHeader shop={shop} />
 
         {/* New Menu Section */}
-        {showNewMenu && (
-          <Reveal y={20} delay={0.05} immediate>
-            <NewMenuSection menus={newMenus} />
-          </Reveal>
-        )}
+        {showNewMenu && <NewMenuSection menus={newMenus} />}
 
         {/* All Menu Grid with Filters */}
-        <Reveal y={20} delay={showNewMenu ? 0.1 : 0.05} immediate={!showNewMenu}>
-          <MenuGrid
-            shopId={shopId}
-            initialMenus={initialMenus}
-            initialHasMore={initialHasMore}
-            immediateFirstRow={!showNewMenu}
-          />
-        </Reveal>
+        <MenuGrid
+          shopId={shopId}
+          initialMenus={initialMenus}
+          initialHasMore={initialHasMore}
+        />
       </main>
     </div>
   );

@@ -5,21 +5,17 @@ import { ShopMenuWithImages, getShopMenusPage } from '../actions';
 import { MENU_PAGE_SIZE } from '../pagination';
 import { MenuCard } from './MenuCard';
 import { MealCategory } from '@prisma/client';
-import { Reveal } from '@/components/Reveal';
 
 interface MenuGridProps {
   shopId: string;
   initialMenus: ShopMenuWithImages[];
   initialHasMore: boolean;
-  /** Play the first row on mount instead of on scroll (when this is the first food section). */
-  immediateFirstRow?: boolean;
 }
 
 export function MenuGrid({
   shopId,
   initialMenus,
   initialHasMore,
-  immediateFirstRow = false,
 }: MenuGridProps) {
   const [selectedCategory, setSelectedCategory] = useState<MealCategory | 'ALL'>('ALL');
   const [menus, setMenus] = useState<ShopMenuWithImages[]>(initialMenus);
@@ -123,15 +119,8 @@ export function MenuGrid({
 
       {menus.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
-          {menus.map((menu, i) => (
-            <Reveal
-              key={menu.id}
-              delay={(i % 8) * 0.04}
-              y={20}
-              immediate={immediateFirstRow && i < 4}
-            >
-              <MenuCard menu={menu} />
-            </Reveal>
+          {menus.map((menu) => (
+            <MenuCard key={menu.id} menu={menu} />
           ))}
         </div>
       ) : isSwitching ? (

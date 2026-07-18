@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import React from 'react';
 import { MenuCard } from './MenuCard';
-import { Reveal } from '@/components/Reveal';
 import { MealDiscountPreview } from '@/features/discounts/getMealDiscountPreview';
 
 interface ShopSectionProps {
@@ -26,7 +25,7 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
   const cardWidth = 'w-40 flex-shrink-0 snap-start sm:w-48 md:w-60 lg:w-64';
 
   return (
-    <Reveal className="mb-10 last:mb-24">
+    <div className="mb-10 last:mb-24">
       {/* Section header */}
       <div className="mb-3 flex items-center justify-between px-4">
         <h2 className="flex items-center gap-2.5 text-lg font-bold text-gray-800 md:text-2xl">
@@ -76,6 +75,6 @@ export function ShopSection({ shopId, shopName, meals }: ShopSectionProps) {
           ))}
         </div>
       )}
-    </Reveal>
+    </div>
   );
 }

@@ -7,7 +7,6 @@ import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { SessionProvider } from "@/components/SessionProvider";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
-import { PageTransition } from "@/components/PageTransition";
 import { NavigationTracker } from "@/components/NavigationTracker";
 import { ToastContainer } from "react-toastify";
 
@@ -129,9 +128,9 @@ export default function RootLayout({
           />
           <NavBar />
           <NavbarSpace />
-          <PageTransition>
+          <div className="flex flex-1 flex-col">
             {children}
-          </PageTransition>
+          </div>
           <Footer />
         </SessionProvider>
       </body>

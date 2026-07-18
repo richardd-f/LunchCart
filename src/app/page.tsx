@@ -2,7 +2,6 @@ import { getHomepageData } from '@/features/homepage/actions';
 import { getMealDiscountPreview } from '@/features/discounts/getMealDiscountPreview';
 import { SearchBar } from '@/features/homepage/components/SearchBar';
 import { ShopSection } from '@/features/homepage/components/ShopSection';
-import { Reveal } from '@/components/Reveal';
 import Image from 'next/image';
 import React, { Suspense } from 'react';
 
@@ -45,23 +44,19 @@ export default async function Home({ searchParams }: HomeProps) {
         {/* Content Container */}
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
           <div className="mb-8 max-w-4xl space-y-4">
-            <Reveal y={16}>
-              <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-md md:text-5xl">
-                Reimagining School Lunch
-              </h1>
-            </Reveal>
-            <Reveal y={16} delay={0.1}>
-              <p className="mx-auto max-w-2xl text-lg text-white/90 drop-shadow-sm md:text-xl">
-                LunchCart, making your break time actually yours.
-              </p>
-            </Reveal>
+            <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-md md:text-5xl">
+              Reimagining School Lunch
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-white/90 drop-shadow-sm md:text-xl">
+              LunchCart, making your break time actually yours.
+            </p>
           </div>
 
-          <Reveal y={16} delay={0.2} className="w-full max-w-lg">
+          <div className="w-full max-w-lg">
             <Suspense fallback={<div className="mx-auto h-12 w-full max-w-md animate-pulse rounded-full bg-white/20 shadow-lg backdrop-blur-md" />}>
               <SearchBar />
             </Suspense>
-          </Reveal>
+          </div>
         </div>
       </section>
 

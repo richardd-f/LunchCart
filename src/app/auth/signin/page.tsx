@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { signIn } from "@/lib/auth";
-import { Reveal } from "@/components/Reveal";
 
 // Error messages mapping
 const errorMessages: Record<string, { title: string; description: string }> = {
@@ -55,7 +54,7 @@ export default async function SignInPage({
 
   return (
     <div className="relative flex min-h-[80vh] items-center justify-center px-4 py-12">
-      <Reveal immediate y={16} className="w-full max-w-md">
+      <div className="w-full max-w-md">
         <div className="rounded-3xl border border-white/60 bg-white/80 p-8 shadow-xl shadow-orange-100/50 backdrop-blur-xl">
           {/* Brand badge */}
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F97352] to-amber-400 shadow-lg shadow-orange-200/70">
@@ -165,7 +164,7 @@ export default async function SignInPage({
             </Link>
           </div>
         </div>
-      </Reveal>
+      </div>
     </div>
   );
 }
