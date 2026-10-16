@@ -45,7 +45,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <div className="relative z-10 flex h-full flex-col items-center justify-center px-4 text-center">
           <div className="mb-8 max-w-4xl space-y-4">
             <h1 className="text-4xl font-bold tracking-tight text-white drop-shadow-md md:text-5xl">
-              Reimagining School Lunch
+              Reimagining School Lunch!
             </h1>
             <p className="mx-auto max-w-2xl text-lg text-white/90 drop-shadow-sm md:text-xl">
               LunchCart, making your break time actually yours.
